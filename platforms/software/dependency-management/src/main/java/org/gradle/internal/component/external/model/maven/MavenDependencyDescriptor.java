@@ -74,6 +74,10 @@ public class MavenDependencyDescriptor extends ExternalDependencyDescriptor {
         return new MavenDependencyDescriptor(scope, type, newRequested, dependencyArtifact, excludes);
     }
 
+    protected MavenDependencyDescriptor withExcludes(List<ExcludeMetadata> newExcludes) {
+        return new MavenDependencyDescriptor(scope, type, selector, dependencyArtifact, newExcludes);
+    }
+
     public List<ExcludeMetadata> getAllExcludes() {
         return excludes;
     }

@@ -16,17 +16,25 @@
 
 package org.gradle.api.internal.artifacts.repositories.resolver;
 
+import org.gradle.api.Action;
 import org.gradle.api.artifacts.DependencyArtifact;
+import org.gradle.api.artifacts.DependencyExcludesMetadata;
 import org.gradle.api.artifacts.DirectDependencyMetadata;
+import org.gradle.api.artifacts.ExcludeRule;
+import org.gradle.api.artifacts.ModuleIdentifier;
+import org.gradle.api.capabilities.DependencyCapabilitiesMetadata;
+import org.gradle.api.internal.artifacts.DefaultExcludeRule;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.attributes.AttributesFactory;
 import org.gradle.internal.component.external.descriptor.Artifact;
+import org.gradle.internal.component.external.model.DefaultDependencyCapabilitiesMetadata;
 import org.gradle.internal.component.external.model.GradleDependencyMetadata;
 import org.gradle.internal.component.external.model.ModuleDependencyMetadata;
 import org.gradle.internal.component.external.model.ivy.IvyDependencyDescriptor;
 import org.gradle.internal.component.external.model.ivy.IvyDependencyMetadata;
 import org.gradle.internal.component.external.model.maven.MavenDependencyDescriptor;
 import org.gradle.internal.component.external.model.maven.MavenDependencyMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
 import org.gradle.internal.component.model.IvyArtifactName;
 
 import java.util.Collections;
@@ -59,8 +67,27 @@ public class DirectDependencyMetadataAdapter extends AbstractDependencyMetadataA
         return getIvyArtifacts().stream().map(this::asDependencyArtifact).collect(Collectors.toList());
     }
 
+    @Override
+    public void excludes(Action<? super DependencyExcludesMetadata> configureAction) {
+        DefaultDependencyExcludesMetadata excludesMetadata = new DefaultDependencyExcludesMetadata(getMetadata().getExcludes());
+        configureAction.execute(excludesMetadata);
+        updateMetadata(getMetadata().withExcludes(excludesMetadata.getExcludeMetadata()));
+    }
+
+    @Override
+    public void capabilities(Action<? super DependencyCapabilitiesMetadata> configureAction) {
+        DependencyCapabilitiesMetadata capabilitiesMetadata = new DefaultDependencyCapabilitiesMetadata(getGroup(), getName(), getMetadata().getSelector().getCapabilitySelectors());
+        configureAction.execute(capabilitiesMetadata);
+        updateMetadata(getMetadata().withCapabilities(capabilitiesMetadata.getSelectors()));
+    }
+
     private DependencyArtifact asDependencyArtifact(IvyArtifactName ivyArtifactName) {
         return new DefaultDependencyArtifact(ivyArtifactName.getName(), ivyArtifactName.getType(), ivyArtifactName.getExtension(), ivyArtifactName.getClassifier(), null);
+    }
+
+    private ExcludeRule asExcludeRule(ExcludeMetadata excludeMetadata) {
+        ModuleIdentifier moduleId = excludeMetadata.getModuleId();
+        return new DefaultExcludeRule(moduleId.getGroup(), moduleId.getName());
     }
 
     private List<IvyArtifactName> getIvyArtifacts() {

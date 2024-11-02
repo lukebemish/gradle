@@ -138,6 +138,16 @@ public abstract class ExternalModuleDependencyMetadata implements ModuleDependen
         return withRequested(newSelector);
     }
 
+    @Override
+    public ModuleDependencyMetadata withCapabilities(Set<CapabilitySelector> capabilities) {
+        ModuleComponentSelector selector = getSelector();
+        if (capabilities.equals(selector.getCapabilitySelectors())) {
+            return this;
+        }
+        ModuleComponentSelector newSelector = DefaultModuleComponentSelector.newSelector(selector.getModuleIdentifier(), selector.getVersionConstraint(), selector.getAttributes(), capabilities);
+        return withRequested(newSelector);
+    }
+
     protected abstract ModuleDependencyMetadata withRequested(ModuleComponentSelector newSelector);
 
     protected abstract ModuleDependencyMetadata withRequestedAndArtifacts(ModuleComponentSelector newSelector, List<IvyArtifactName> artifacts);

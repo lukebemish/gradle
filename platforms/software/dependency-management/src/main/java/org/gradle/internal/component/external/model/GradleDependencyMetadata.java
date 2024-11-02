@@ -82,6 +82,14 @@ public class GradleDependencyMetadata implements ModuleDependencyMetadata, Forci
     }
 
     @Override
+    public ModuleDependencyMetadata withCapabilities(Set<CapabilitySelector> capabilities) {
+        if (capabilities.equals(selector.getCapabilitySelectors())) {
+            return this;
+        }
+        return new GradleDependencyMetadata(DefaultModuleComponentSelector.newSelector(selector.getModuleIdentifier(), selector.getVersionConstraint(), selector.getAttributes(), capabilities), excludes, constraint, endorsing, reason, force, artifacts);
+    }
+
+    @Override
     public ModuleDependencyMetadata withReason(String reason) {
         if (Objects.equal(reason, this.reason)) {
             return this;
@@ -95,6 +103,11 @@ public class GradleDependencyMetadata implements ModuleDependencyMetadata, Forci
             return this;
         }
         return new GradleDependencyMetadata(selector, excludes, constraint, endorse, reason, force, artifacts);
+    }
+
+    @Override
+    public ModuleDependencyMetadata withExcludes(Set<ExcludeMetadata> rules) {
+        return new GradleDependencyMetadata(selector, ImmutableList.copyOf(rules), constraint, endorsing, reason, force, artifacts);
     }
 
     @Override

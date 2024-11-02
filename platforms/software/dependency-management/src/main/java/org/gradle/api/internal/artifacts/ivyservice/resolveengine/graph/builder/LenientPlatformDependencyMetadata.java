@@ -69,12 +69,22 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
     }
 
     @Override
+    public ModuleDependencyMetadata withCapabilities(Set<CapabilitySelector> capabilities) {
+        return this;
+    }
+
+    @Override
     public ModuleDependencyMetadata withReason(String reason) {
         return this;
     }
 
     @Override
     public ModuleDependencyMetadata withEndorseStrictVersions(boolean endorse) {
+        return this;
+    }
+
+    @Override
+    public ModuleDependencyMetadata withExcludes(Set<ExcludeMetadata> rules) {
         return this;
     }
 

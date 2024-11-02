@@ -16,15 +16,25 @@
 
 package org.gradle.api.internal.artifacts.repositories.resolver;
 
+import org.gradle.api.Action;
 import org.gradle.api.artifacts.DependencyArtifact;
+import org.gradle.api.artifacts.DependencyExcludesMetadata;
 import org.gradle.api.artifacts.DirectDependencyMetadata;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
+import org.gradle.api.capabilities.DependencyCapabilitiesMetadata;
+import org.gradle.internal.component.external.model.DefaultDependencyCapabilitiesMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DirectDependencyMetadataImpl extends AbstractDependencyImpl<DirectDependencyMetadata> implements DirectDependencyMetadata {
 
     private boolean endorsing = false;
+    private Set<ExcludeMetadata> excludes = new LinkedHashSet<>();
+    private Set<CapabilitySelector> capabilities = new LinkedHashSet<>();
 
     public DirectDependencyMetadataImpl(String group, String name, String version) {
         super(group, name, version);
@@ -50,4 +60,17 @@ public class DirectDependencyMetadataImpl extends AbstractDependencyImpl<DirectD
         return Collections.emptyList();
     }
 
+    @Override
+    public void excludes(Action<? super DependencyExcludesMetadata> configureAction) {
+        DefaultDependencyExcludesMetadata excludesMetadata = new DefaultDependencyExcludesMetadata(excludes);
+        configureAction.execute(excludesMetadata);
+        excludes = excludesMetadata.getExcludeMetadata();
+    }
+
+    @Override
+    public void capabilities(Action<? super DependencyCapabilitiesMetadata> configureAction) {
+        DefaultDependencyCapabilitiesMetadata capabilitiesMetadata = new DefaultDependencyCapabilitiesMetadata(getGroup(), getName(), capabilities);
+        configureAction.execute(capabilitiesMetadata);
+        capabilities = capabilitiesMetadata.getSelectors();
+    }
 }

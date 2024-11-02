@@ -16,9 +16,13 @@
 package org.gradle.internal.component.external.model;
 
 import org.gradle.api.artifacts.VersionConstraint;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.artifacts.component.ModuleComponentSelector;
 import org.gradle.internal.component.model.DelegatingDependencyMetadata;
 import org.gradle.internal.component.model.DependencyMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
+
+import java.util.Set;
 
 public class ModuleDependencyMetadataWrapper extends DelegatingDependencyMetadata implements ModuleDependencyMetadata {
     private final DependencyMetadata delegate;
@@ -36,6 +40,13 @@ public class ModuleDependencyMetadataWrapper extends DelegatingDependencyMetadat
     }
 
     @Override
+    public ModuleDependencyMetadata withCapabilities(Set<CapabilitySelector> capabilities) {
+        ModuleComponentSelector selector = getSelector();
+        ModuleComponentSelector newSelector = DefaultModuleComponentSelector.newSelector(selector.getModuleIdentifier(), selector.getVersionConstraint(), selector.getAttributes(), capabilities);
+        return new ModuleDependencyMetadataWrapper(delegate.withTarget(newSelector));
+    }
+
+    @Override
     public ModuleDependencyMetadata withReason(String reason) {
         return new ModuleDependencyMetadataWrapper(delegate.withReason(reason));
     }
@@ -44,6 +55,14 @@ public class ModuleDependencyMetadataWrapper extends DelegatingDependencyMetadat
     public ModuleDependencyMetadata withEndorseStrictVersions(boolean endorse) {
         if (delegate instanceof ModuleDependencyMetadata) {
             return new ModuleDependencyMetadataWrapper(((ModuleDependencyMetadata) delegate).withEndorseStrictVersions(endorse));
+        }
+        return this;
+    }
+
+    @Override
+    public ModuleDependencyMetadata withExcludes(Set<ExcludeMetadata> rules) {
+        if (delegate instanceof ModuleDependencyMetadata) {
+            return new ModuleDependencyMetadataWrapper(((ModuleDependencyMetadata) delegate).withExcludes(rules));
         }
         return this;
     }

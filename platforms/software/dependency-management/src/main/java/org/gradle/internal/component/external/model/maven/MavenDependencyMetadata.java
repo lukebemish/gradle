@@ -16,6 +16,7 @@
 
 package org.gradle.internal.component.external.model.maven;
 
+import com.google.common.collect.ImmutableList;
 import org.gradle.api.artifacts.component.ModuleComponentSelector;
 import org.gradle.api.internal.attributes.ImmutableAttributes;
 import org.gradle.api.internal.attributes.immutable.ImmutableAttributesSchema;
@@ -31,6 +32,7 @@ import org.gradle.internal.component.model.VariantGraphResolveState;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents a dependency declared in a Maven POM file.
@@ -81,6 +83,11 @@ public class MavenDependencyMetadata extends ExternalModuleDependencyMetadata {
     @Override
     public ModuleDependencyMetadata withEndorseStrictVersions(boolean endorse) {
         return new MavenDependencyMetadata(dependencyDescriptor, getReason(), endorse, getArtifacts());
+    }
+
+    @Override
+    public ModuleDependencyMetadata withExcludes(Set<ExcludeMetadata> rules) {
+        return new MavenDependencyMetadata(dependencyDescriptor.withExcludes(ImmutableList.copyOf(rules)), getReason(), isEndorsingStrictVersions(), getArtifacts());
     }
 
     @Override

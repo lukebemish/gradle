@@ -68,6 +68,8 @@ public interface DependencyMetadata {
 
     DependencyMetadata withTargetAndArtifacts(ComponentSelector target, List<IvyArtifactName> artifacts);
 
+    DependencyMetadata
+
     /**
      * Is the target component of this dependency considered 'changing'.
      */

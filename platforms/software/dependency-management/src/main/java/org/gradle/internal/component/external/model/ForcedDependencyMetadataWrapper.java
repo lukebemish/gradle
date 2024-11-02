@@ -16,15 +16,18 @@
 package org.gradle.internal.component.external.model;
 
 import org.gradle.api.artifacts.VersionConstraint;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.artifacts.component.ComponentSelector;
 import org.gradle.api.artifacts.component.ModuleComponentSelector;
 import org.gradle.internal.component.local.model.DefaultProjectDependencyMetadata;
 import org.gradle.internal.component.model.DelegatingDependencyMetadata;
 import org.gradle.internal.component.model.DependencyMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
 import org.gradle.internal.component.model.ForcingDependencyMetadata;
 import org.gradle.internal.component.model.IvyArtifactName;
 
 import java.util.List;
+import java.util.Set;
 
 public class ForcedDependencyMetadataWrapper extends DelegatingDependencyMetadata implements ForcingDependencyMetadata, ModuleDependencyMetadata {
     private final ModuleDependencyMetadata delegate;
@@ -45,6 +48,11 @@ public class ForcedDependencyMetadataWrapper extends DelegatingDependencyMetadat
     }
 
     @Override
+    public ModuleDependencyMetadata withCapabilities(Set<CapabilitySelector> capabilities) {
+        return new ForcedDependencyMetadataWrapper(delegate.withCapabilities(capabilities));
+    }
+
+    @Override
     public ModuleDependencyMetadata withReason(String reason) {
         return new ForcedDependencyMetadataWrapper(delegate.withReason(reason));
     }
@@ -52,6 +60,11 @@ public class ForcedDependencyMetadataWrapper extends DelegatingDependencyMetadat
     @Override
     public ModuleDependencyMetadata withEndorseStrictVersions(boolean endorse) {
         return new ForcedDependencyMetadataWrapper(delegate.withEndorseStrictVersions(endorse));
+    }
+
+    @Override
+    public ModuleDependencyMetadata withExcludes(Set<ExcludeMetadata> rules) {
+        return new ForcedDependencyMetadataWrapper(delegate.withExcludes(rules));
     }
 
     @Override

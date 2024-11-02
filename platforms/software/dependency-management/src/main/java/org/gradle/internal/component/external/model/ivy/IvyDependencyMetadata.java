@@ -16,6 +16,7 @@
 
 package org.gradle.internal.component.external.model.ivy;
 
+import com.google.common.collect.ImmutableList;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.component.ModuleComponentSelector;
 import org.gradle.api.internal.attributes.ImmutableAttributes;
@@ -26,6 +27,7 @@ import org.gradle.internal.component.local.model.LocalComponentGraphResolveState
 import org.gradle.internal.component.local.model.LocalVariantGraphResolveState;
 import org.gradle.internal.component.model.ComponentGraphResolveState;
 import org.gradle.internal.component.model.ConfigurationMetadata;
+import org.gradle.internal.component.model.Exclude;
 import org.gradle.internal.component.model.ExcludeMetadata;
 import org.gradle.internal.component.model.GraphVariantSelectionResult;
 import org.gradle.internal.component.model.GraphVariantSelector;
@@ -36,6 +38,7 @@ import org.gradle.internal.deprecation.DeprecationLogger;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents a dependency declared in an Ivy descriptor file.
@@ -146,5 +149,14 @@ public class IvyDependencyMetadata extends ExternalModuleDependencyMetadata {
 
     public ModuleDependencyMetadata withDescriptor(IvyDependencyDescriptor descriptor) {
         return new IvyDependencyMetadata(configuration, descriptor, getReason(), isEndorsingStrictVersions(), dependencyDescriptor.getConfigurationArtifacts(configuration));
+    }
+
+    @Override
+    public ModuleDependencyMetadata withExcludes(Set<ExcludeMetadata> rules) {
+        List<Exclude> excludes = rules.stream()
+            .filter(exclude -> exclude instanceof Exclude)
+            .map(exclude -> (Exclude) exclude)
+            .collect(ImmutableList.toImmutableList());
+        return new IvyDependencyMetadata(configuration, dependencyDescriptor.withExcludes(excludes), getReason(), isEndorsingStrictVersions(), getArtifacts());
     }
 }

@@ -16,6 +16,9 @@
 
 package org.gradle.api.artifacts;
 
+import org.gradle.api.Action;
+import org.gradle.api.capabilities.DependencyCapabilitiesMetadata;
+
 import java.util.List;
 
 /**
@@ -59,4 +62,13 @@ public interface DirectDependencyMetadata extends DependencyMetadata<DirectDepen
      */
     List<DependencyArtifact> getArtifactSelectors();
 
+    /**
+     * TODO: document
+     */
+    void excludes(Action<? super DependencyExcludesMetadata> configureAction);
+
+    /**
+     * TODO: document
+     */
+    void capabilities(Action<? super DependencyCapabilitiesMetadata> configureAction);
 }

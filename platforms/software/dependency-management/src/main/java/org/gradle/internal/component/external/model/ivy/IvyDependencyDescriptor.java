@@ -112,6 +112,10 @@ public class IvyDependencyDescriptor extends ExternalDependencyDescriptor {
         return new IvyDependencyDescriptor(newRequested, dynamicConstraintVersion, changing, transitive, isOptional(), confs, getDependencyArtifacts(), excludes);
     }
 
+    protected IvyDependencyDescriptor withExcludes(List<Exclude> excludes) {
+        return new IvyDependencyDescriptor(selector, dynamicConstraintVersion, changing, transitive, isOptional(), confs, getDependencyArtifacts(), excludes);
+    }
+
     /**
      * Choose a set of configurations from the target component.
      * The set chosen is based on a) the name of the configuration that declared this dependency and b) the {@link #confs} mapping for this dependency.
