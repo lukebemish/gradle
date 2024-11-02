@@ -16,6 +16,7 @@
 
 package org.gradle.internal.component.external.model.maven;
 
+import com.google.common.collect.ImmutableList;
 import org.gradle.api.artifacts.component.ModuleComponentSelector;
 import org.gradle.internal.component.external.model.ExternalModuleDependencyMetadata;
 import org.gradle.internal.component.external.model.ModuleDependencyMetadata;
@@ -24,6 +25,7 @@ import org.gradle.internal.component.model.IvyArtifactName;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents a dependency declared in a Maven POM file.
@@ -63,6 +65,11 @@ public class MavenDependencyMetadata extends ExternalModuleDependencyMetadata {
     @Override
     public ModuleDependencyMetadata withEndorseStrictVersions(boolean endorse) {
         return new MavenDependencyMetadata(dependencyDescriptor, getReason(), endorse, getArtifacts());
+    }
+
+    @Override
+    public ModuleDependencyMetadata withExcludes(Set<ExcludeMetadata> rules) {
+        return new MavenDependencyMetadata(dependencyDescriptor.withExcludes(ImmutableList.copyOf(rules)), getReason(), isEndorsingStrictVersions(), getArtifacts());
     }
 
     @Override

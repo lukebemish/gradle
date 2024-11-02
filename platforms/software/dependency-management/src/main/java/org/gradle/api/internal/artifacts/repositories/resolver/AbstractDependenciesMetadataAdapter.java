@@ -21,19 +21,23 @@ import com.google.common.collect.ImmutableSet;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.DependenciesMetadata;
 import org.gradle.api.artifacts.DependencyMetadata;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.artifacts.component.ModuleComponentSelector;
 import org.gradle.api.internal.artifacts.dependencies.DefaultImmutableVersionConstraint;
 import org.gradle.api.internal.attributes.AttributesFactory;
 import org.gradle.internal.component.external.model.DefaultModuleComponentSelector;
 import org.gradle.internal.component.external.model.GradleDependencyMetadata;
 import org.gradle.internal.component.external.model.ModuleDependencyMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.typeconversion.NotationParser;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class AbstractDependenciesMetadataAdapter<T extends DependencyMetadata<T>, E extends T> extends ArrayList<T> implements DependenciesMetadata<T> {
     private final Instantiator instantiator;
@@ -53,6 +57,14 @@ public abstract class AbstractDependenciesMetadataAdapter<T extends DependencyMe
     protected abstract boolean isConstraint();
 
     protected abstract boolean isEndorsingStrictVersions(T details);
+
+    protected Set<CapabilitySelector> getCapabilitySelectors(T details) {
+        return ImmutableSet.of();
+    }
+
+    protected List<ExcludeMetadata> getExcludes(T details) {
+        return Collections.emptyList();
+    }
 
     @Override
     public void add(String dependencyNotation) {
@@ -106,8 +118,8 @@ public abstract class AbstractDependenciesMetadataAdapter<T extends DependencyMe
     }
 
     private E adapt(T details) {
-        ModuleComponentSelector selector = DefaultModuleComponentSelector.newSelector(details.getModule(), DefaultImmutableVersionConstraint.of(details.getVersionConstraint()), details.getAttributes(), ImmutableSet.of());
-        GradleDependencyMetadata dependencyMetadata = new GradleDependencyMetadata(selector, Collections.emptyList(), isConstraint(), isEndorsingStrictVersions(details), details.getReason(), false, null);
+        ModuleComponentSelector selector = DefaultModuleComponentSelector.newSelector(details.getModule(), DefaultImmutableVersionConstraint.of(details.getVersionConstraint()), details.getAttributes(), getCapabilitySelectors(details));
+        GradleDependencyMetadata dependencyMetadata = new GradleDependencyMetadata(selector, getExcludes(details), isConstraint(), isEndorsingStrictVersions(details), details.getReason(), false, null);
         return instantiator.newInstance(adapterImplementationType(), attributesFactory, dependencyMetadata);
     }
 }

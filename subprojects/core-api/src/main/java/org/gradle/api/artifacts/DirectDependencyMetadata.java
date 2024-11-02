@@ -16,7 +16,14 @@
 
 package org.gradle.api.artifacts;
 
+import org.gradle.api.Action;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
+import org.gradle.api.capabilities.Capability;
+import org.gradle.api.capabilities.DependencyCapabilitiesMetadata;
+import org.gradle.internal.HasInternalProtocol;
+
 import java.util.List;
+import java.util.Set;
 
 /**
  * Describes a dependency declared in a resolved component's metadata, which typically originates from
@@ -25,6 +32,7 @@ import java.util.List;
  *
  * @since 4.5
  */
+@HasInternalProtocol
 public interface DirectDependencyMetadata extends DependencyMetadata<DirectDependencyMetadata> {
 
     /**
@@ -59,4 +67,33 @@ public interface DirectDependencyMetadata extends DependencyMetadata<DirectDepen
      */
     List<DependencyArtifact> getArtifactSelectors();
 
+    /**
+     * Adjust the exclude rules of this dependency.
+     *
+     * @param configureAction modify exclude rules
+     */
+    DirectDependencyMetadata excludes(Action<? super DependencyExcludesMetadata> configureAction);
+
+    Set<ExcludeRule> getExcludeRules();
+
+    /**
+     * Adjust the capabilities requested by this dependency.
+     *
+     * @param configureAction modify capability details
+     */
+    DirectDependencyMetadata capabilities(Action<? super DependencyCapabilitiesMetadata> configureAction);
+
+    /**
+     * Returns the capability selectors of this dependency.
+     *
+     * @return the capability selectors of this dependency
+     */
+    Set<CapabilitySelector> getCapabilitySelectors();
+
+    /**
+     * Returns the exact capabilities requested by this dependency.
+     *
+     * @return the exact capabilities requested by this dependency
+     */
+    List<Capability> getRequestedCapabilities();
 }

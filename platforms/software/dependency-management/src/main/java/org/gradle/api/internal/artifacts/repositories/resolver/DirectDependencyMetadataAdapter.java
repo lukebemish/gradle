@@ -16,8 +16,12 @@
 
 package org.gradle.api.internal.artifacts.repositories.resolver;
 
+import org.gradle.api.Action;
 import org.gradle.api.artifacts.DependencyArtifact;
+import org.gradle.api.artifacts.DependencyExcludesMetadata;
 import org.gradle.api.artifacts.DirectDependencyMetadata;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
+import org.gradle.api.capabilities.DependencyCapabilitiesMetadata;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.attributes.AttributesFactory;
 import org.gradle.internal.component.external.descriptor.Artifact;
@@ -27,13 +31,15 @@ import org.gradle.internal.component.external.model.ivy.IvyDependencyDescriptor;
 import org.gradle.internal.component.external.model.ivy.IvyDependencyMetadata;
 import org.gradle.internal.component.external.model.maven.MavenDependencyDescriptor;
 import org.gradle.internal.component.external.model.maven.MavenDependencyMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
 import org.gradle.internal.component.model.IvyArtifactName;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-public class DirectDependencyMetadataAdapter extends AbstractDependencyMetadataAdapter<DirectDependencyMetadata> implements DirectDependencyMetadata {
+public class DirectDependencyMetadataAdapter extends AbstractDependencyMetadataAdapter<DirectDependencyMetadata> implements DirectDependencyMetadataInternal {
 
     public DirectDependencyMetadataAdapter(AttributesFactory attributesFactory, ModuleDependencyMetadata metadata) {
         super(attributesFactory, metadata);
@@ -55,8 +61,29 @@ public class DirectDependencyMetadataAdapter extends AbstractDependencyMetadataA
     }
 
     @Override
+    public DirectDependencyMetadata excludes(Action<? super DependencyExcludesMetadata> configureAction) {
+        DefaultDependencyExcludesMetadata excludesMetadata = new DefaultDependencyExcludesMetadata(getMetadata().getExcludes());
+        configureAction.execute(excludesMetadata);
+        updateMetadata(getMetadata().withExcludes(excludesMetadata.getExcludeMetadata()));
+        return this;
+    }
+
+    @Override
+    public DirectDependencyMetadata capabilities(Action<? super DependencyCapabilitiesMetadata> configureAction) {
+        DefaultDependencyCapabilitiesMetadata capabilitiesMetadata = new DefaultDependencyCapabilitiesMetadata(getGroup(), getName(), getMetadata().getSelector().getCapabilitySelectors());
+        configureAction.execute(capabilitiesMetadata);
+        updateMetadata(getMetadata().withCapabilities(capabilitiesMetadata.getSelectors()));
+        return this;
+    }
+
+    @Override
     public List<DependencyArtifact> getArtifactSelectors() {
         return getIvyArtifacts().stream().map(this::asDependencyArtifact).collect(Collectors.toList());
+    }
+
+    @Override
+    public Set<CapabilitySelector> getCapabilitySelectors() {
+        return getMetadata().getSelector().getCapabilitySelectors();
     }
 
     private DependencyArtifact asDependencyArtifact(IvyArtifactName ivyArtifactName) {
@@ -98,4 +125,8 @@ public class DirectDependencyMetadataAdapter extends AbstractDependencyMetadataA
         return Collections.emptyList();
     }
 
+    @Override
+    public List<ExcludeMetadata> getExcludes() {
+        return getMetadata().getExcludes();
+    }
 }

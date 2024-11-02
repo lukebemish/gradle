@@ -16,15 +16,25 @@
 
 package org.gradle.api.internal.artifacts.repositories.resolver;
 
+import com.google.common.collect.ImmutableSet;
+import org.gradle.api.Action;
 import org.gradle.api.artifacts.DependencyArtifact;
+import org.gradle.api.artifacts.DependencyExcludesMetadata;
 import org.gradle.api.artifacts.DirectDependencyMetadata;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
+import org.gradle.api.capabilities.DependencyCapabilitiesMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
-public class DirectDependencyMetadataImpl extends AbstractDependencyImpl<DirectDependencyMetadata> implements DirectDependencyMetadata {
+public class DirectDependencyMetadataImpl extends AbstractDependencyImpl<DirectDependencyMetadata> implements DirectDependencyMetadataInternal {
 
     private boolean endorsing = false;
+    private Set<ExcludeMetadata> excludes = ImmutableSet.of();
+    private Set<CapabilitySelector> capabilities = ImmutableSet.of();
 
     public DirectDependencyMetadataImpl(String group, String name, String version) {
         super(group, name, version);
@@ -50,4 +60,29 @@ public class DirectDependencyMetadataImpl extends AbstractDependencyImpl<DirectD
         return Collections.emptyList();
     }
 
+    @Override
+    public DirectDependencyMetadata excludes(Action<? super DependencyExcludesMetadata> configureAction) {
+        DefaultDependencyExcludesMetadata excludesMetadata = new DefaultDependencyExcludesMetadata(excludes);
+        configureAction.execute(excludesMetadata);
+        excludes = excludesMetadata.getExcludeMetadata();
+        return this;
+    }
+
+    @Override
+    public DirectDependencyMetadata capabilities(Action<? super DependencyCapabilitiesMetadata> configureAction) {
+        DefaultDependencyCapabilitiesMetadata capabilitiesMetadata = new DefaultDependencyCapabilitiesMetadata(getGroup(), getName(), capabilities);
+        configureAction.execute(capabilitiesMetadata);
+        capabilities = capabilitiesMetadata.getSelectors();
+        return this;
+    }
+
+    @Override
+    public Set<CapabilitySelector> getCapabilitySelectors() {
+        return Collections.unmodifiableSet(capabilities);
+    }
+
+    @Override
+    public List<ExcludeMetadata> getExcludes() {
+        return new ArrayList<>(excludes);
+    }
 }

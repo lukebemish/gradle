@@ -18,10 +18,15 @@ package org.gradle.api.internal.artifacts.repositories.resolver;
 
 import org.gradle.api.artifacts.DirectDependenciesMetadata;
 import org.gradle.api.artifacts.DirectDependencyMetadata;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.internal.attributes.AttributesFactory;
 import org.gradle.internal.component.external.model.ModuleDependencyMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.typeconversion.NotationParser;
+
+import java.util.List;
+import java.util.Set;
 
 public class DirectDependenciesMetadataAdapter extends AbstractDependenciesMetadataAdapter<DirectDependencyMetadata, DirectDependencyMetadataAdapter> implements DirectDependenciesMetadata {
     public DirectDependenciesMetadataAdapter(
@@ -51,4 +56,13 @@ public class DirectDependenciesMetadataAdapter extends AbstractDependenciesMetad
         return details.isEndorsingStrictVersions();
     }
 
+    @Override
+    protected Set<CapabilitySelector> getCapabilitySelectors(DirectDependencyMetadata details) {
+        return details.getCapabilitySelectors();
+    }
+
+    @Override
+    protected List<ExcludeMetadata> getExcludes(DirectDependencyMetadata details) {
+        return ((DirectDependencyMetadataInternal) details).getExcludes();
+    }
 }

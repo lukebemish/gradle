@@ -16,8 +16,12 @@
 package org.gradle.internal.component.external.model;
 
 import org.gradle.api.artifacts.VersionConstraint;
+import org.gradle.api.artifacts.capability.CapabilitySelector;
 import org.gradle.api.artifacts.component.ModuleComponentSelector;
 import org.gradle.internal.component.model.DependencyMetadata;
+import org.gradle.internal.component.model.ExcludeMetadata;
+
+import java.util.Set;
 
 public interface ModuleDependencyMetadata extends DependencyMetadata {
     @Override
@@ -32,4 +36,8 @@ public interface ModuleDependencyMetadata extends DependencyMetadata {
     ModuleDependencyMetadata withReason(String reason);
 
     ModuleDependencyMetadata withEndorseStrictVersions(boolean endorse);
+
+    ModuleDependencyMetadata withExcludes(Set<ExcludeMetadata> rules);
+
+    ModuleDependencyMetadata withCapabilities(Set<CapabilitySelector> capabilities);
 }
