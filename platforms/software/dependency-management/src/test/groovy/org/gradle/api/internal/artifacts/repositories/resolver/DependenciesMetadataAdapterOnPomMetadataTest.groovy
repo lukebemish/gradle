@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.artifacts.repositories.resolver
 
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ModuleComponentSelector
 import org.gradle.internal.component.external.descriptor.MavenScope
 import org.gradle.internal.component.external.model.ModuleDependencyMetadata
@@ -26,7 +27,7 @@ import org.gradle.internal.component.external.model.maven.MavenDependencyType
 class DependenciesMetadataAdapterOnPomMetadataTest extends DependenciesMetadataAdapterTest {
 
     @Override
-    ModuleDependencyMetadata newDependency(ModuleComponentSelector requested) {
+    ModuleDependencyMetadata newDependency(ModuleComponentSelector requested, ModuleComponentIdentifier identifier) {
         MavenDependencyDescriptor dependencyDescriptor = new MavenDependencyDescriptor(MavenScope.Compile, MavenDependencyType.DEPENDENCY, requested, null, [])
         return new MavenDependencyMetadata(dependencyDescriptor)
     }

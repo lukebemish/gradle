@@ -17,10 +17,12 @@
 package org.gradle.api.internal.artifacts.repositories.resolver
 
 import org.gradle.api.artifacts.DirectDependencyMetadata
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ModuleComponentSelector
 import org.gradle.api.attributes.Attribute
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
 import org.gradle.api.internal.notations.DependencyMetadataNotationParser
+import org.gradle.internal.component.external.model.DefaultModuleComponentIdentifier
 import org.gradle.internal.component.external.model.DefaultModuleComponentSelector
 import org.gradle.internal.component.external.model.ModuleDependencyMetadata
 import org.gradle.internal.reflect.DirectInstantiator
@@ -33,7 +35,7 @@ import spock.lang.Specification
 abstract class DependenciesMetadataAdapterTest extends Specification {
     DirectDependenciesMetadataAdapter adapter
 
-    abstract ModuleDependencyMetadata newDependency(ModuleComponentSelector requested);
+    abstract ModuleDependencyMetadata newDependency(ModuleComponentSelector requested, ModuleComponentIdentifier identifier);
 
     def setup() {
         fillDependencyList(0)
@@ -217,6 +219,40 @@ abstract class DependenciesMetadataAdapterTest extends Specification {
         adapter.get(0).artifactSelectors == []
     }
 
+    def "can modify dependency capabilities"() {
+        given:
+        fillDependencyList(1)
+
+        when:
+        adapter.get(0).capabilities {
+            it.addRequestedCapability("foo", "bar")
+            it.addRequestedFeature("feature-name")
+        }
+
+        then:
+        dependenciesMetadata[0].selector.requestedCapabilities.collect { "$it.group:$it.name" } == [
+            "foo:bar",
+            "org.gradle.test:module0-feature-name"
+        ]
+    }
+
+    def "can modify dependency excludes"() {
+        given:
+        fillDependencyList(1)
+
+        when:
+        adapter.get(0).excludes {
+            it.addExclude("foo", "bar")
+            it.addExclude("baz", "*")
+        }
+
+        then:
+        dependenciesMetadata[0].excludes.collect { "$it.moduleId.group:$it.moduleId.name" } == [
+            "foo:bar",
+            "baz:*"
+        ]
+    }
+
     private fillDependencyList(int size) {
         adapter = new DirectDependenciesMetadataAdapter(
             AttributeTestUtil.attributesFactory(),
@@ -225,7 +261,8 @@ abstract class DependenciesMetadataAdapterTest extends Specification {
 
         for (int i = 0; i < size; i++) {
             ModuleComponentSelector requested = DefaultModuleComponentSelector.newSelector(DefaultModuleIdentifier.newId("org.gradle.test", "module$i"), "1.0")
-            ModuleDependencyMetadata dep = newDependency(requested)
+            ModuleComponentIdentifier identifier = new DefaultModuleComponentIdentifier(DefaultModuleIdentifier.newId("org.gradle.test", "module$i"), "1.0")
+            ModuleDependencyMetadata dep = newDependency(requested, identifier)
             adapter.add ( DirectInstantiator.INSTANCE.newInstance(DirectDependencyMetadataAdapter, AttributeTestUtil.attributesFactory(), dep))
         }
     }
