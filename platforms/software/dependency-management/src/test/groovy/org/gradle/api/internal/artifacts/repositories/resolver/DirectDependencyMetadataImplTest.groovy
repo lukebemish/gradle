@@ -62,4 +62,38 @@ class DirectDependencyMetadataImplTest extends Specification {
         selectors == []
     }
 
+    def "can modify dependency capabilities"() {
+        given:
+        def metadata = new DirectDependencyMetadataImpl("g", "a", "v")
+
+        when:
+        metadata.capabilities {
+            it.addRequestedCapability("foo", "bar")
+            it.addRequestedFeature("feature-name")
+        }
+
+        then:
+        metadata.requestedCapabilities.collect { "$it.group:$it.name" } == [
+            "foo:bar",
+            "g:a-feature-name"
+        ]
+    }
+
+    def "can modify dependency excludes"() {
+        given:
+        def metadata = new DirectDependencyMetadataImpl("g", "a", "v")
+
+        when:
+        metadata.excludes {
+            it.addExclude("foo", "bar")
+            it.addExclude("baz", "*")
+        }
+
+        then:
+        metadata.excludeRules.collect { "$it.moduleId.group:$it.moduleId.name" } == [
+            "foo:bar",
+            "baz:*"
+        ]
+    }
+
 }
