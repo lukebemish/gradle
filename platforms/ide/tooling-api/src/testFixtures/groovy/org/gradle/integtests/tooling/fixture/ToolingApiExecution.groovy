@@ -22,10 +22,14 @@ import org.gradle.integtests.fixtures.extensions.AbstractMultiTestInterceptor
 import org.gradle.util.GradleVersion
 import org.spockframework.runtime.extension.IMethodInvocation
 
+import java.util.function.Predicate
+import java.util.stream.Collectors
+import java.util.stream.Stream
+
 class ToolingApiExecution extends AbstractMultiTestInterceptor.Execution {
 
     private static final GradleVersion INSTALLATION_GRADLE_VERSION
-    private static final GradleVersionSpec GRADLE_VERSION_SPEC = new GradleVersionSpec()
+    private static final GradleVersionPredicate GRADLE_VERSION_PREDICATE = new GradleVersionPredicate()
 
     static {
         // If we are testing a non-current tooling API version, we will have loaded the class using its classloader and thus
@@ -90,33 +94,41 @@ class ToolingApiExecution extends AbstractMultiTestInterceptor.Execution {
     }
 
     private boolean daemonSupported(AbstractMultiTestInterceptor.TestDetails testDetails, int jvmVersion) {
-        TargetGradleVersion gradleVersionAnnotation = testDetails.getAnnotation(TargetGradleVersion)
-        Spec<GradleVersion> gradleVersionSpec = toVersionSpec(gradleVersionAnnotation)
-        gradleVersionSpec.isSatisfiedBy(this.gradleVersion) && gradle.daemonWorksWith(jvmVersion)
+        List<TargetGradleVersion> gradleVersionAnnotations = testDetails.getAnnotations(TargetGradleVersion)
+        return toVersionPredicate(gradleVersionAnnotations).test(this.gradleVersion) && gradle.daemonWorksWith(jvmVersion)
     }
 
     private boolean toolingApiSupported(AbstractMultiTestInterceptor.TestDetails testDetails, int jvmVersion) {
-        ToolingApiVersion toolingVersionAnnotation = testDetails.getAnnotation(ToolingApiVersion)
-        Spec<GradleVersion> toolingVersionSpec = toVersionSpec(toolingVersionAnnotation)
-        toolingVersionSpec.isSatisfiedBy(this.toolingApiVersion) && toolingApi.clientWorksWith(jvmVersion)
+        List<ToolingApiVersion> toolingVersionAnnotations = testDetails.getAnnotations(ToolingApiVersion)
+        return toVersionPredicate(toolingVersionAnnotations).test(this.toolingApiVersion) && toolingApi.clientWorksWith(jvmVersion)
     }
 
-    private static Spec<GradleVersion> toVersionSpec(annotation) {
-        if (annotation == null) {
-            return Specs.satisfyAll()
+    private static Predicate<GradleVersion> toVersionPredicate(List<?> annotations) {
+        if (annotations.isEmpty()) {
+            return (v) -> true;
         }
-        return GRADLE_VERSION_SPEC.toSpec(constraintFor(annotation))
+        List<Predicate<GradleVersion>> predicates = annotations.stream()
+                .flatMap { annotation -> constraintsFor(annotation) }
+                .map(constraint -> GRADLE_VERSION_PREDICATE.toPredicate(constraint))
+                .collect(Collectors.toList())
+        return (v) -> predicates.stream().allMatch { it.test(v) }
     }
 
-    private static String constraintFor(annotation) {
-        if(annotation.value() == "current"){
-            return "=${INSTALLATION_GRADLE_VERSION.baseVersion.version}"
-        }
-        return annotation.value()
+    private static Stream<String> constraintsFor(annotation) {
+        def patterns = annotation.value().split(/\s+/)*.trim()
+        return patterns.stream().map(
+                pattern -> {
+                    if ("current".equals(pattern)) {
+                        return "=${INSTALLATION_GRADLE_VERSION.baseVersion.version}" // special handling, needs an extra equals prefix
+                    } else {
+                        pattern.replaceAll("current", "${INSTALLATION_GRADLE_VERSION.baseVersion.version}")
+                    }
+                }
+        )
     }
 
     @Override
     protected void before(IMethodInvocation invocation) {
-        ((ToolingApiSpecification) invocation.getInstance()).setTargetDist(gradle)
+        ((ToolingApiSpecification) invocation.getInstance()).setTargetDistAndToolingApiVersion(gradle, toolingApiVersion)
     }
 }

@@ -40,9 +40,10 @@ dependencies {
 
     implementation(libs.commonsIo)
     implementation(libs.guava)
-    implementation(libs.guice)
-    implementation(libs.jspecify)
+    implementation(testLibs.guice)
     implementation(libs.slf4jApi)
+
+    compileOnly(libs.jspecify)
 }
 
 application {

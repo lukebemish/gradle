@@ -20,17 +20,12 @@ plugins {
 
 description = "Contains a basic JVM plugin used to compile, test, and assemble Java source; often applied by other JVM plugins (though named java-base, jvm-base would be a more proper name)."
 
-errorprone {
-    disabledChecks.addAll(
-        "UnusedMethod", // 1 occurrences
-    )
-}
-
 dependencies {
     api(projects.baseServices)
     api(projects.core)
     api(projects.coreApi)
     api(projects.dependencyManagement)
+    api(projects.jvmCompilerWorker)
     api(projects.languageJava)
     api(projects.languageJvm)
     api(projects.modelCore)
@@ -45,6 +40,7 @@ dependencies {
 
     implementation(projects.fileCollections)
     implementation(projects.fileOperations)
+    implementation(projects.javaCompilerWorker)
     implementation(projects.javadoc)
     implementation(projects.jvmServices)
     implementation(projects.logging)

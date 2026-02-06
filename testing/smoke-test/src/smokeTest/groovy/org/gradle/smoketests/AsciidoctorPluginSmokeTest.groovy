@@ -59,7 +59,7 @@ class AsciidoctorPluginSmokeTest extends AbstractPluginValidatingSmokeTest {
         def versions = Versions.of(TestedVersions.asciidoctor)
         [
             "org.asciidoctor.editorconfig": versions,
-            // "org.asciidoctor.js.convert" : versions, //  Broken after 9.0. See https://github.com/asciidoctor/asciidoctor-gradle-plugin/pull/749
+            "org.asciidoctor.js.convert": versions,
             "org.asciidoctor.jvm.convert": versions,
             "org.asciidoctor.jvm.epub": versions,
             // Plugin broken after JCenter dependency disappeared
@@ -91,6 +91,8 @@ class AsciidoctorPluginSmokeTest extends AbstractPluginValidatingSmokeTest {
                     "Consult the upgrading guide for further information: ${BASE_URL}/userguide/upgrading_version_8.html#deprecated_startparameter_is_configuration_cache_requested",
                 "https://github.com/asciidoctor/asciidoctor-gradle-plugin/issues/751"
             )
+            // Asciidoc plugin currently triggers an --enable-native-access warning on Java 24+
+            runner.withJdkWarningChecksDisabled()
         }
     }
 }

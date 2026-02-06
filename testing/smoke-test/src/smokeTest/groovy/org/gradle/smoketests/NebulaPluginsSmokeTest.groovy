@@ -70,7 +70,7 @@ class NebulaPluginsSmokeTest extends AbstractPluginValidatingSmokeTest implement
         """
 
         then:
-        runner('groovydoc', '-s').build()
+        runner('groovydoc', '-s').expectDeprecationWarning("The DomainObjectCollection.findAll(Closure) method has been deprecated. This is scheduled to be removed in Gradle 10. Consult the upgrading guide for further information: https://docs.gradle.org/current/userguide/upgrading_version_9.html#findAll_removal", "https://github.com/nebula-plugins/gradle-info-plugin/issues/115").build()
     }
 
     @Ignore("https://github.com/nebula-plugins/gradle-lint-plugin/issues/417")
@@ -131,7 +131,7 @@ testImplementation('junit:junit:4.7')""")
         runner('buildEnvironment', 'generateLock').build()
 
         where:
-        nebulaDepLockVersion << TestedVersions.nebulaDependencyLock.versions
+        nebulaDepLockVersion << [TestedVersions.nebulaDependencyLock]
     }
 
     @Issue("gradle/gradle#3798")
@@ -195,7 +195,7 @@ testImplementation('junit:junit:4.7')""")
         runner('resolve').build()
 
         where:
-        version << TestedVersions.nebulaDependencyLock
+        version << [TestedVersions.nebulaDependencyLock]
     }
 
     @Issue('https://plugins.gradle.org/plugin/com.netflix.nebula.resolution-rules')

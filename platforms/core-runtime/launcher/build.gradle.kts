@@ -7,15 +7,17 @@ description = "Implementation for launching, controlling and communicating with 
 
 dependencies {
     api(projects.baseServices)
+    api(projects.buildDiscovery)
+    api(projects.buildDiscoveryImpl)
     api(projects.buildEvents)
     api(projects.buildOperations)
     api(projects.buildOption)
     api(projects.buildState)
-    api(projects.classloaders)
     api(projects.cli)
     api(projects.concurrent)
     api(projects.core)
     api(projects.coreApi)
+    api(projects.daemonLogging)
     api(projects.daemonProtocol)
     api(projects.enterpriseLogging)
     api(projects.execution)
@@ -50,12 +52,16 @@ dependencies {
     api(libs.jspecify)
 
     implementation(projects.buildProcessServices)
+    implementation(projects.classloaders)
+    implementation(projects.collections)
     implementation(projects.enterpriseOperations)
-    implementation(projects.functional)
     implementation(projects.io)
     implementation(projects.serviceRegistryBuilder)
 
     implementation(libs.slf4jApi)
+    // Required directly by CliTextPrinter (uses Ant Main and Groovy ReleaseInfo)
+    implementation(libs.ant)
+    implementation(libs.groovy)
 
     runtimeOnly(projects.gradleCliMain)
     runtimeOnly(projects.declarativeDslProvider)
@@ -64,6 +70,10 @@ dependencies {
     runtimeOnly(libs.commonsIo)
     runtimeOnly(libs.commonsLang)
     runtimeOnly(libs.slf4jApi)
+
+    runtimeOnly(projects.kotlinDsl) {
+        because("KotlinScriptPluginFactory is loaded dynamically at runtime by ScriptPluginFactorySelector")
+    }
 
     // The wrapper expects the launcher Jar to have classpath entries that contain the main class and its runtime classpath
     manifestClasspath(projects.gradleCliMain)

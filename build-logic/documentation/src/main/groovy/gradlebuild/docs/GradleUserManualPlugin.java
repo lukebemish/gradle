@@ -59,6 +59,7 @@ public class GradleUserManualPlugin implements Plugin<Project> {
         generateUserManual(project, tasks, layout, extension);
 
         checkXrefLinksInUserManualAreValid(layout, tasks, extension);
+        checkMultiLangSnippetsAreValid(layout, tasks, extension);
         checkLinksInUserManualAreNotMissing(layout, tasks, extension);
     }
 
@@ -243,6 +244,7 @@ public class GradleUserManualPlugin implements Plugin<Project> {
 
             task.sources(patternSet -> {
                 patternSet.include("**/*.adoc");
+                patternSet.include("**/*.js");
                 patternSet.exclude("javaProject*Layout.adoc");
                 patternSet.exclude("userguide_single.adoc");
                 patternSet.exclude("snippets/**/*.adoc");
@@ -280,6 +282,10 @@ public class GradleUserManualPlugin implements Plugin<Project> {
             task.from(extension.getUserManual().getRoot().dir("img"), sub -> {
                 sub.include("**/*.png", "**/*.gif", "**/*.jpg", "**/*.svg");
                 sub.into("img");
+            });
+            task.from(extension.getUserManual().getRoot().dir("js"), sub -> {
+                sub.include("**/*.js");
+                sub.into("js");
             });
         });
 
@@ -339,6 +345,14 @@ public class GradleUserManualPlugin implements Plugin<Project> {
         });
 
         tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME, task -> task.dependsOn(checkDeadInternalLinks));
+    }
+
+    private void checkMultiLangSnippetsAreValid(ProjectLayout layout, TaskContainer tasks, GradleDocumentationExtension extension) {
+        TaskProvider<FindBadMultiLangSnippets> checkMultiLangSnippets = tasks.register("checkMultiLangSnippets", FindBadMultiLangSnippets.class, task -> {
+            task.getDocumentationRoot().convention(extension.getUserManual().getStagedDocumentation()); // working/usermanual/raw/
+        });
+
+        tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME, task -> task.dependsOn(checkMultiLangSnippets));
     }
 
     private void checkLinksInUserManualAreNotMissing(ProjectLayout layout, TaskContainer tasks, GradleDocumentationExtension extension) {

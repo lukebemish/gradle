@@ -20,11 +20,9 @@ import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import org.gradle.api.artifacts.result.ComponentSelectionReason;
 import org.gradle.api.artifacts.result.ResolvedVariantResult;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.ResolvedGraphComponent;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.ResolvedGraphVariant;
-import org.gradle.api.internal.project.HoldsProjectState;
 import org.gradle.internal.component.model.ComponentGraphResolveState;
 import org.gradle.internal.component.model.VariantGraphResolveState;
 import org.gradle.internal.serialize.Decoder;
@@ -45,7 +43,7 @@ import java.util.List;
  * to adhoc components would prevent them from being garbage collected.
  */
 @ServiceScope(Scope.BuildTree.class)
-public class ThisBuildTreeOnlyComponentResultSerializer implements ComponentResultSerializer, HoldsProjectState {
+public class ThisBuildTreeOnlyComponentResultSerializer implements ComponentResultSerializer {
 
     private final Long2ObjectMap<ComponentGraphResolveState> components = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
     private final Long2ObjectMap<VariantGraphResolveState> variants = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
@@ -56,12 +54,6 @@ public class ThisBuildTreeOnlyComponentResultSerializer implements ComponentResu
         ComponentSelectionDescriptorFactory componentSelectionDescriptorFactory
     ) {
         this.reasonSerializer = new ComponentSelectionReasonSerializer(componentSelectionDescriptorFactory);
-    }
-
-    @Override
-    public void discardAll() {
-        components.clear();
-        variants.clear();
     }
 
     @Override
@@ -111,12 +103,10 @@ public class ThisBuildTreeOnlyComponentResultSerializer implements ComponentResu
     @Override
     public void readComponentResult(Decoder decoder, ResolvedComponentVisitor visitor) throws Exception {
         long resultId = decoder.readSmallLong();
-        ComponentSelectionReason reason = reasonSerializer.read(decoder);
+        ComponentSelectionReasonInternal reason = reasonSerializer.read(decoder);
         String repo = decoder.readNullableString();
-        visitor.startVisitComponent(resultId, reason, repo);
-
         ComponentGraphResolveState component = readComponentReference(decoder);
-        visitor.visitComponentDetails(component.getId(), component.getMetadata().getModuleVersionId());
+        visitor.startVisitComponent(resultId, reason, repo, component.getId(), component.getMetadata().getModuleVersionId());
 
         boolean includeAllSelectableVariantResults = decoder.readBoolean();
         if (includeAllSelectableVariantResults) {

@@ -65,21 +65,23 @@ dependencies {
     implementation(projects.logging)
     implementation(projects.messaging)
     implementation(projects.modelCore)
+    implementation(projects.problemsRendering)
     implementation(projects.serialization)
     implementation(projects.serviceLookup)
     implementation(projects.snapshots)
 
     implementation(libs.guava)
     implementation(libs.fastutil)
+    implementation(libs.slf4jApi)
 
     testImplementation(projects.stdlibKotlinExtensions)
     testImplementation(testFixtures(projects.core))
 
-    testImplementation(libs.junit)
+    testImplementation(testLibs.junit)
 
-    testImplementation(libs.mockitoKotlin)
+    testImplementation(testLibs.mockitoKotlin)
     testImplementation(libs.kotlinReflect)
-    testImplementation(libs.mockitoCore)
+    testImplementation(testLibs.mockitoCore)
 
     integTestImplementation(projects.internalTesting)
     integTestImplementation(testFixtures(projects.logging))

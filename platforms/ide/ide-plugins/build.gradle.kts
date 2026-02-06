@@ -47,6 +47,7 @@ dependencies {
     implementation(projects.pluginsJavaBase)
     implementation(projects.pluginsJvmTestFixtures)
     implementation(projects.pluginsJvmTestSuite)
+    implementation(projects.problemsApi)
     implementation(projects.scala)
     implementation(projects.serviceLookup)
     implementation(projects.testSuitesBase)
@@ -66,7 +67,7 @@ dependencies {
         because("ProjectBuilder tests load services from a Gradle distribution.")
     }
 
-    testImplementation(libs.xmlunit)
+    testImplementation(testLibs.xmlunit)
 
 
     integTestImplementation(projects.internalIntegTesting)

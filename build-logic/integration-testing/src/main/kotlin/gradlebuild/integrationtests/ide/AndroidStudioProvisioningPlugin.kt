@@ -28,10 +28,10 @@ import org.gradle.kotlin.dsl.*
 import org.gradle.process.CommandLineArgumentProvider
 
 
-// Android Studio Narwhal | 2025.1.2.11
+// Android Studio Otter 3 Feature Drop | 2025.2.3 RC 3 January 8, 2026
 // Find all references here https://developer.android.com/studio/archive
 // Update verification-metadata.xml
-const val DEFAULT_ANDROID_STUDIO_VERSION = "2025.1.2.11"
+const val DEFAULT_ANDROID_STUDIO_VERSION = "2025.2.3.8"
 const val UNPACK_ANDROID_STUDIO_TASK_NAME = "unpackAndroidStudio"
 const val ANDROID_STUDIO_INSTALL_PATH = "android-studio"
 

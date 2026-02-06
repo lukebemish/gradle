@@ -19,12 +19,13 @@ package org.gradle.api.initialization;
 import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.file.ProjectLayout;
+import org.gradle.declarative.dsl.model.annotations.HiddenInDefinition;
 import org.gradle.internal.service.scopes.Scope;
 import org.gradle.internal.service.scopes.ServiceScope;
 
 /**
- * Shared model defaults for configuring software types.  Defaults apply initial values to the model objects of software types.
- * When a software type plugin is applied to a project, the model object for the software type will be pre-configured with the values
+ * Shared model defaults for configuring project types.  Defaults apply initial values to the model objects of project types.
+ * When a project type plugin is applied to a project, the model object for the project type will be pre-configured with the values
  * set in the default.
  *
  * @since 8.10
@@ -42,16 +43,18 @@ public interface SharedModelDefaults {
      *
      * @since 8.14
      */
+    @HiddenInDefinition
     ProjectLayout getLayout();
 
     /**
-     * Adds a model default for the software type specified by the given name.
+     * Adds a model default for the project type specified by the given name.
      *
-     * @param name the name of the software type
-     * @param publicType the public type of the software type
-     * @param configureAction the action to configure the software type
+     * @param name the name of the project type
+     * @param publicType the public type of the project type
+     * @param configureAction the action to configure the project type
      *
      * @since 8.10
      */
+    @HiddenInDefinition
     <T> void add(String name, Class<T> publicType, Action<? super T> configureAction);
 }

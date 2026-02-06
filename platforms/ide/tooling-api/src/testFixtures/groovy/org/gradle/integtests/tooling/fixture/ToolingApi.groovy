@@ -52,6 +52,7 @@ class ToolingApi implements TestRule {
     private boolean requireIsolatedDaemons
     private ConnectorFactory connectorFactory = new SharedConnectorFactory()
     private context = IntegrationTestBuildContext.INSTANCE
+    private GradleVersion toolingApiVersion
 
     private final List<Closure> connectorConfigurers = []
     boolean verboseLogging = LOGGER.debugEnabled
@@ -67,14 +68,24 @@ class ToolingApi implements TestRule {
         this.daemonBaseDir = context.daemonBaseDir
         this.requiresDaemon = !IntegrationTestBuildContext.embedded
         this.testWorkDirProvider = testWorkDirProvider
+        this.toolingApiVersion = null
     }
 
     void setDist(GradleDistribution dist) {
         this.dist = dist
     }
 
+
     GradleDistribution getDistribution() {
         return dist
+    }
+
+    void setToolingApiVersion(GradleVersion toolingApiVersion) {
+        this.toolingApiVersion = toolingApiVersion
+    }
+
+    GradleVersion getToolingApiVersion() {
+        return toolingApiVersion
     }
 
     /**
@@ -209,7 +220,7 @@ class ToolingApi implements TestRule {
         connector(testWorkDirProvider.testDirectory, false)
     }
 
-    ToolingApiConnector connector(File projectDir) {
+    ToolingApiConnector connector(TestFile projectDir) {
         connector(projectDir, true)
     }
 
@@ -220,7 +231,7 @@ class ToolingApi implements TestRule {
      * Optionally, stdout and stderr can be redirected to the system streams so they are visible
      * in the console.
      */
-    ToolingApiConnector connector(File projectDir, boolean redirectOutput) {
+    ToolingApiConnector connector(TestFile projectDir, boolean redirectOutput) {
         GradleConnector connector = rawConnector(projectDir)
 
         OutputStream output = stdout
@@ -237,12 +248,12 @@ class ToolingApi implements TestRule {
     /**
      * Get a {@link GradleConnector} that is not wrapped to forward stdout and stderr.
      * <p>
-     * In general, prefer {@link #connector(File)}. This method should be used when
+     * In general, prefer {@link #connector(TestFile)}. This method should be used when
      * interfacing with production code that is not {@link ToolingApiConnector}-aware.
      *
      * TODO: Can we get rid of this and have ToolingApiConnector implement GradleConnector?
      */
-    GradleConnector rawConnector(File projectDir = testWorkDirProvider.testDirectory) {
+    GradleConnector rawConnector(TestFile projectDir = testWorkDirProvider.testDirectory) {
         DefaultGradleConnector connector = createConnector()
 
         connector.forProjectDirectory(projectDir)

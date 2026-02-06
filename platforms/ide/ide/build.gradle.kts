@@ -15,6 +15,7 @@ dependencies {
     api(projects.stdlibJavaExtensions)
     api(projects.modelCore)
     api(projects.platformJvm)
+    api(projects.problemsApi)
     api(projects.serviceProvider)
     api(projects.toolingApi)
 
@@ -27,7 +28,9 @@ dependencies {
     implementation(projects.buildProcessServices)
     implementation(projects.classloaders)
     implementation(projects.ear)
+    implementation(projects.javaCompilerWorker)
     implementation(projects.languageJava)
+    implementation(projects.launcher)
     implementation(projects.loggingApi)
     implementation(projects.platformBase)
     implementation(projects.pluginsJava)
@@ -40,6 +43,7 @@ dependencies {
     implementation(libs.commonsIo)
     implementation(libs.commonsLang)
 
+    runtimeOnly(projects.buildEvents)
     runtimeOnly(projects.languageJvm)
     runtimeOnly(projects.testingBase)
     runtimeOnly(projects.testingJvm)
@@ -57,11 +61,11 @@ dependencies {
     testFixturesImplementation(projects.internalIntegTesting)
     testFixturesImplementation(projects.modelCore)
     testFixturesImplementation(libs.groovyXml)
-    testFixturesImplementation(libs.xmlunit)
+    testFixturesImplementation(testLibs.xmlunit)
 
     testImplementation(projects.dependencyManagement)
-    testImplementation(libs.xmlunit)
-    testImplementation(libs.equalsverifier)
+    testImplementation(testLibs.xmlunit)
+    testImplementation(testLibs.equalsverifier)
     testImplementation(testFixtures(projects.core))
     testImplementation(testFixtures(projects.dependencyManagement))
     testImplementation(testFixtures(projects.languageGroovy))
@@ -70,7 +74,6 @@ dependencies {
         because("ProjectBuilder tests load services from a Gradle distribution.")
     }
     integTestDistributionRuntimeOnly(projects.distributionsJvm)
-    crossVersionTestDistributionRuntimeOnly(projects.distributionsJvm)
 }
 
 strictCompile {

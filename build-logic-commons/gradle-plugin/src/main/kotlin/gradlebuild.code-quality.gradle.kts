@@ -2,11 +2,9 @@ import gradlebuild.nullaway.NullawayAttributes
 import gradlebuild.nullaway.NullawayCompatibilityRule
 import gradlebuild.nullaway.NullawayState
 import gradlebuild.nullaway.NullawayStatusTask
-import groovy.lang.GroovySystem
 import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
 import net.ltgt.gradle.nullaway.nullaway
-import org.gradle.util.internal.VersionNumber
 
 /*
  * Copyright 2022 the original author or authors.
@@ -53,12 +51,14 @@ val errorproneExtension = project.extensions.create<ErrorProneProjectExtension>(
         "JdkObsolete", // Most of the checks are good, but we do not want to replace all LinkedLists without a good reason
 
         // NEVER
-        "MissingSummary", // We have another mechanism to check Javadocs on public API
+        "AssignmentExpression", // Not using it is more a matter of taste.
+        "EffectivelyPrivate", // It is still useful to distinguish between public interface and implementation details of inner classes even though it isn't enforced.
         "InjectOnConstructorOfAbstractClass", // We use abstract injection as a pattern
-        "JavaxInjectOnAbstractMethod", // We use abstract injection as a pattern
-        "JavaUtilDate", // We are fine with using Date
-        "StringSplitter", // We are fine with using String.split() as is
         "InlineMeSuggester", // Only suppression seems to actually "fix" this, so make it global
+        "JavaUtilDate", // We are fine with using Date
+        "JavaxInjectOnAbstractMethod", // We use abstract injection as a pattern
+        "MissingSummary", // We have another mechanism to check Javadocs on public API
+        "StringSplitter", // We are fine with using String.split() as is
     )
 
     nullawayEnabled.convention(false)
@@ -113,17 +113,18 @@ project.plugins.withType<JavaBasePlugin> {
         }
 
         @Suppress("UnstableApiUsage")
-        fun addErrorProneDependency(dep: String) {
+        fun addErrorProneDependency(dep: Provider<out ExternalModuleDependency>) {
             project.dependencies.addProvider(
                 annotationProcessorConfigurationName,
-                extension.enabled.filter { it }.map { dep }
+                extension.enabled.filter { it }.flatMap { dep }
             )
         }
 
-        // don't forget to update the version in distributions-dependencies/build.gradle.kts
-        // 2.31.0 is the latest version that works with JDK 11
-        addErrorProneDependency("com.google.errorprone:error_prone_core:2.31.0")
-        addErrorProneDependency("com.uber.nullaway:nullaway:0.12.7")
+        if (project.name != "gradle-kotlin-dsl-accessors") {
+            val buildDeps = project.versionCatalogs.named("buildLibs")
+            addErrorProneDependency(buildDeps.findLibrary("errorProne").get())
+            addErrorProneDependency(buildDeps.findLibrary("nullaway").get())
+        }
 
         project.tasks.named<JavaCompile>(this.compileJavaTaskName) {
             options.errorprone {
@@ -170,9 +171,11 @@ val rules by configurations.creating {
     }
 }
 
-val groovyVersion = GroovySystem.getVersion()
-val isAtLeastGroovy4 = VersionNumber.parse(groovyVersion).major >= 4
-val codenarcVersion = if (isAtLeastGroovy4) "3.6.0-groovy-4.0" else "3.6.0"
+val buildLibs = if (project.name != "gradle-kotlin-dsl-accessors") {
+    project.versionCatalogs.named("buildLibs")
+} else {
+    null
+}
 
 dependencies {
     rules("gradlebuild:code-quality-rules") {
@@ -181,20 +184,18 @@ dependencies {
     codenarc("gradlebuild:code-quality-rules") {
         because("Provides the IntegrationTestFixturesRule implementation")
     }
-    codenarc("org.codenarc:CodeNarc:$codenarcVersion")
-    codenarc(embeddedKotlin("stdlib"))
-
-    components {
-        withModule<CodeNarcRule>("org.codenarc:CodeNarc") {
-            params(groovyVersion)
-        }
+    buildLibs?.let {
+        codenarc(buildLibs.findLibrary("codenarc").get())
+        codenarc(buildLibs.findLibrary("kotlinCompilerEmbeddable").get())
     }
 }
 
 fun configFile(fileName: String) = resources.text.fromFile(rules.asFileTree.filter { it.name == fileName })
 
 checkstyle {
-    toolVersion = "10.25.0"
+    buildLibs?.let {
+        toolVersion = buildLibs.findVersion("checkstyle").get().requiredVersion
+    }
     config = configFile("checkstyle.xml")
     val projectDirectory = layout.projectDirectory
     configDirectory = rules.elements.map {
@@ -226,25 +227,3 @@ tasks.withType<CodeNarc>().configureEach {
 
 val SourceSet.allGroovy: SourceDirectorySet
     get() = the<GroovySourceDirectorySet>()
-
-abstract class CodeNarcRule @Inject constructor(
-    private val groovyVersion: String
-) : ComponentMetadataRule {
-    override fun execute(context: ComponentMetadataContext) {
-        context.details.allVariants {
-            withDependencies {
-                val isAtLeastGroovy4 = VersionNumber.parse(groovyVersion).major >= 4
-                val groovyGroup = if (isAtLeastGroovy4) "org.apache.groovy" else "org.codehaus.groovy"
-                removeAll { it.group == groovyGroup }
-                add("$groovyGroup:groovy") {
-                    version { prefer(groovyVersion) }
-                    because("We use the packaged groovy")
-                }
-                add("$groovyGroup:groovy-templates") {
-                    version { prefer(groovyVersion) }
-                    because("We use the packaged groovy")
-                }
-            }
-        }
-    }
-}

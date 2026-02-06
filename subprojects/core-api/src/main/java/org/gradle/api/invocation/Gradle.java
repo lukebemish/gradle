@@ -26,11 +26,11 @@ import org.gradle.api.Project;
 import org.gradle.api.ProjectEvaluationListener;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.execution.TaskExecutionGraph;
-import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.PluginAware;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.services.BuildServiceRegistry;
 import org.gradle.internal.HasInternalProtocol;
 import org.gradle.internal.service.scopes.Scope;
@@ -46,7 +46,7 @@ import java.util.Collection;
  * <p>You can obtain a {@code Gradle} instance by calling {@link Project#getGradle()}.</p>
  */
 @HasInternalProtocol
-@ServiceScope(Scope.Gradle.class)
+@ServiceScope(Scope.Build.class)
 public interface Gradle extends PluginAware, ExtensionAware {
 
     /**
@@ -292,7 +292,7 @@ public interface Gradle extends PluginAware, ExtensionAware {
      * A {@link BuildResult} instance is passed to the closure as a parameter.
      *
      * @param closure The closure to execute.
-     * @see FlowProviders#getBuildWorkResult()
+     * @see org.gradle.api.flow.FlowProviders#getBuildWorkResult()
      * @deprecated This method is not supported when configuration caching is enabled.
      */
     @Deprecated
@@ -304,7 +304,7 @@ public interface Gradle extends PluginAware, ExtensionAware {
      * All selected tasks have been executed.
      *
      * @param action The action to execute.
-     * @see FlowProviders#getBuildWorkResult()
+     * @see org.gradle.api.flow.FlowProviders#getBuildWorkResult()
      * @since 3.4
      * @deprecated This method is not supported when configuration caching is enabled.
      */
@@ -401,4 +401,13 @@ public interface Gradle extends PluginAware, ExtensionAware {
      * @since 3.1
      */
     IncludedBuild includedBuild(String name) throws UnknownDomainObjectException;
+
+    /**
+     * Provides access to methods to create various kinds of {@link org.gradle.api.provider.Provider} instances.
+     *
+     * @return the provider factory. Never returns null.
+     * @since 9.4.0
+     */
+    @Incubating
+    ProviderFactory getProviders();
 }

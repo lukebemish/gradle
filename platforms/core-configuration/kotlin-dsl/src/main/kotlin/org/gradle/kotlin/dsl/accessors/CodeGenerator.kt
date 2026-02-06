@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 internal
 data class AccessorScope(
     private val targetTypesByName: HashMap<AccessorNameSpec, HashSet<TypeAccessibility.Accessible>> = hashMapOf(),
-    private val softwareTypeEntriesByName: HashMap<AccessorNameSpec, HashSet<TypedSoftwareTypeEntry>> = hashMapOf(),
+    private val projectFeatureEntriesByName: HashMap<AccessorNameSpec, HashSet<TypedProjectFeatureEntry>> = hashMapOf(),
     private val containerElementFactoriesByName: HashMap<AccessorNameSpec, HashSet<TypedContainerElementFactoryEntry>> = hashMapOf(),
 ) {
     fun uniqueAccessorsFor(entries: Iterable<ProjectSchemaEntry<TypeAccessibility>>): Sequence<TypedAccessorSpec> =
@@ -37,14 +37,14 @@ data class AccessorScope(
     fun uniqueAccessorsFrom(accessorSpecs: Sequence<TypedAccessorSpec>): Sequence<TypedAccessorSpec> =
         accessorSpecs.filter(::add)
 
-    fun uniqueSoftwareTypeEntries(softwareTypeEntries: Iterable<TypedSoftwareTypeEntry>): Sequence<TypedSoftwareTypeEntry> =
-        softwareTypeEntries.asSequence().filter(::add)
+    fun uniqueProjectFeatureEntries(projectFeatureEntries: Iterable<TypedProjectFeatureEntry>): Sequence<TypedProjectFeatureEntry> =
+        projectFeatureEntries.asSequence().filter(::add)
 
     fun uniqueContainerElementFactories(elementFactoryEntries: Iterable<TypedContainerElementFactoryEntry>): Sequence<TypedContainerElementFactoryEntry> =
         elementFactoryEntries.asSequence().filter(::add)
 
-    private fun add(softwareTypeEntry: TypedSoftwareTypeEntry): Boolean =
-        softwareTypeEntriesByName.getOrPut(softwareTypeEntry.softwareTypeName) { hashSetOf() }.add(softwareTypeEntry)
+    private fun add(projectFeatureEntry: TypedProjectFeatureEntry): Boolean =
+        projectFeatureEntriesByName.getOrPut(projectFeatureEntry.projectFeatureName) { hashSetOf() }.add(projectFeatureEntry)
 
     private fun add(containerElementFactory: TypedContainerElementFactoryEntry): Boolean =
         containerElementFactoriesByName.getOrPut(containerElementFactory.name) { hashSetOf() }.add(containerElementFactory)
@@ -72,6 +72,21 @@ fun extensionAccessor(spec: TypedAccessorSpec): String = spec.run {
         is TypeAccessibility.Inaccessible -> inaccessibleExtensionAccessorFor(receiver.type.kotlinString, name, type)
     }
 }
+
+internal
+fun nestedModelAccessor(spec: TypedAccessorSpec): String = spec.run {
+    when (type) {
+        is TypeAccessibility.Accessible -> accessibleNestedModelAccessorFor(
+            receiver.type.kotlinString,
+            name,
+            type.type.kotlinString,
+            type.deprecation(),
+            uniqueOptInAnnotations(receiver, type)
+        )
+        is TypeAccessibility.Inaccessible -> inaccessibleExtensionAccessorForNestedModel(receiver.type.kotlinString, name, type)
+    }
+}
+
 
 internal fun maybeDeprecationAnnotations(deprecation: Deprecated?): String {
     fun deprecatedAnnotation(deprecation: Deprecated) =
@@ -173,6 +188,26 @@ fun accessibleExtensionAccessorFor(
     """.trimMargin()
 }
 
+private
+fun accessibleNestedModelAccessorFor(
+    targetType: String,
+    name: AccessorNameSpec,
+    type: String,
+    deprecation: Deprecated?,
+    optInAnnotations: List<AnnotationRepresentation>
+): String = name.run {
+    val annotations = "${maybeDeprecationAnnotations(deprecation)}${maybeOptInAnnotationSource(optInAnnotations)}"
+    """
+        /**
+         * Configures the [$original][$type] nested model.
+         */
+        ${annotations}fun $targetType.`$kotlinIdentifier`(configure: Action<$type>): Unit =
+            action.execute($kotlinIdentifier)
+
+    """.trimMargin()
+}
+
+
 
 private
 fun inaccessibleExtensionAccessorFor(targetType: String, name: AccessorNameSpec, typeAccess: TypeAccessibility.Inaccessible): String = name.run {
@@ -196,6 +231,19 @@ fun inaccessibleExtensionAccessorFor(targetType: String, name: AccessorNameSpec,
     """
 }
 
+private
+fun inaccessibleExtensionAccessorForNestedModel(targetType: String, name: AccessorNameSpec, typeAccess: TypeAccessibility.Inaccessible): String = name.run {
+    """
+        /**
+         * Configures the `$original` nested model.
+         *
+         * ${documentInaccessibilityReasons(name, typeAccess)}
+         */
+        fun $targetType.`$kotlinIdentifier`(configure: Action<Any>): Unit =
+            configure.execute($kotlinIdentifier)
+
+    """
+}
 
 internal
 fun existingTaskAccessor(spec: TypedAccessorSpec): String = spec.run {
@@ -290,7 +338,7 @@ fun accessibleModelDefaultAccessorFor(name: AccessorNameSpec, type: String, depr
     val annotations = """${maybeDeprecationAnnotations(deprecation)}${maybeOptInAnnotationSource(optIns)}"""
     """
     |        /**
-    |         * Adds model defaults for the [$original][$name] software type.
+    |         * Adds model defaults for the [$original][$name] project type.
     |         */
     |        ${annotations}fun SharedModelDefaults.`$kotlinIdentifier`(configure: Action<$type>): Unit =
     |            add("$stringLiteral", $type, configure)
@@ -302,7 +350,7 @@ private
 fun inaccessibleModelDefaultAccessorFor(name: AccessorNameSpec, typeAccess: TypeAccessibility.Inaccessible): String = name.run {
     """
         /**
-         * Adds model defaults for the `$original` software type.
+         * Adds model defaults for the `$original` project type.
          *
          * ${documentInaccessibilityReasons(name, typeAccess)}
          */
@@ -376,9 +424,10 @@ data class TypedAccessorSpec(
 )
 
 internal
-data class TypedSoftwareTypeEntry(
-    val softwareTypeName: AccessorNameSpec,
-    val modelType: TypeAccessibility
+data class TypedProjectFeatureEntry(
+    val projectFeatureName: AccessorNameSpec,
+    val modelType: TypeAccessibility,
+    val targetType: TypeAccessibility
 )
 
 internal

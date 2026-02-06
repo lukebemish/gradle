@@ -17,20 +17,21 @@
 package org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
-import org.gradle.api.artifacts.result.ComponentSelectionReason;
 import org.gradle.api.capabilities.Capability;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.ComponentResolutionState;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.DependencyGraphComponent;
+import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.DependencyGraphEdge;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.ResolvedGraphVariant;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.conflicts.VersionConflictResolutionDetails;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.result.ComponentSelectionDescriptorInternal;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.result.ComponentSelectionReasonInternal;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.result.ComponentSelectionReasons;
-import org.gradle.api.internal.capabilities.CapabilityInternal;
+import org.gradle.api.internal.capabilities.ImmutableCapability;
 import org.gradle.internal.Pair;
 import org.gradle.internal.component.model.ComponentGraphResolveMetadata;
 import org.gradle.internal.component.model.ComponentGraphResolveState;
@@ -44,6 +45,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -137,10 +139,6 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
         return module;
     }
 
-    public void selectAndRestartModule() {
-        module.replaceWith(this);
-    }
-
     @Override
     @Nullable
     public ComponentGraphResolveMetadata getMetadataOrNull() {
@@ -177,15 +175,6 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
             return resolveState.getId();
         }
         return componentIdentifier;
-    }
-
-    /**
-     * Restarts all incoming edges for this component, queuing them up for processing.
-     */
-    public void restartIncomingEdges(ComponentState selected) {
-        for (NodeState node : nodes) {
-            node.restart(selected);
-        }
     }
 
     public void setSelectors(ModuleSelectors<SelectorState> selectors) {
@@ -230,6 +219,7 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
         graphResolveState = result.getGraphState();
     }
 
+    @SuppressWarnings("ReferenceEquality") //TODO: evaluate errorprone suppression (https://github.com/gradle/gradle/issues/35864)
     private boolean tryResolveVirtualPlatform() {
         if (module.isVirtualPlatform()) {
             for (ComponentState version : module.getAllVersions()) {
@@ -257,27 +247,34 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
         nodes.add(node);
     }
 
-    private ComponentSelectionReason cachedReason;
+    private @Nullable ComponentSelectionReasonInternal cachedReason;
 
     @Override
-    public ComponentSelectionReason getSelectionReason() {
+    public ComponentSelectionReasonInternal getSelectionReason() {
+        if (cachedReason == null) {
+            cachedReason = computeReason();
+        }
+        return cachedReason;
+    }
+
+    private ComponentSelectionReasonInternal computeReason() {
         if (root) {
             return ComponentSelectionReasons.root();
         }
-        if (cachedReason != null) {
-            return cachedReason;
-        }
-        ComponentSelectionReasonInternal reason = ComponentSelectionReasons.empty();
-        for (final SelectorState selectorState : module.getSelectors()) {
+
+        ImmutableSet.Builder<ComponentSelectionDescriptorInternal> builder = ImmutableSet.builder();
+        for (SelectorState selectorState : module.getSelectors()) {
             if (selectorState.getFailure() == null) {
-                selectorState.addReasonsForSelector(reason);
+                selectorState.visitSelectionReasons(builder::add);
             }
         }
-        for (ComponentSelectionDescriptorInternal selectionCause : VersionConflictResolutionDetails.mergeCauses(selectionCauses)) {
-            reason.addCause(selectionCause);
+
+        for (DependencyGraphEdge incomingEdge : module.getAllIncomingEdges()) {
+            incomingEdge.visitSelectionReasons(builder::add);
         }
-        cachedReason = reason;
-        return reason;
+
+        builder.addAll(VersionConflictResolutionDetails.mergeCauses(selectionCauses));
+        return ComponentSelectionReasons.of(builder.build());
     }
 
     boolean hasStrongOpinion() {
@@ -293,6 +290,10 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
 
     public void setRoot() {
         this.root = true;
+    }
+
+    public boolean isRoot() {
+        return root;
     }
 
     @Override
@@ -349,7 +350,7 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
     public void rejectForCapabilityConflict(Capability capability, Collection<NodeState> conflictedNodes) {
         this.rejected = true;
         if (this.capabilityReject == null) {
-            this.capabilityReject = Pair.of(capability, conflictedNodes);
+            this.capabilityReject = Pair.of(capability, new HashSet<>(conflictedNodes));
         } else {
             mergeCapabilityRejects(capability, conflictedNodes);
         }
@@ -360,7 +361,7 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
         if (this.capabilityReject.getLeft().equals(capability)) {
             this.capabilityReject.getRight().addAll(conflictedNodes);
         } else {
-            this.capabilityReject = Pair.of(capability, conflictedNodes);
+            this.capabilityReject = Pair.of(capability, new HashSet<>(conflictedNodes));
         }
     }
 
@@ -380,7 +381,7 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
     private static String formatCapabilityRejectMessage(ModuleIdentifier id, Pair<Capability, Collection<NodeState>> capabilityConflict) {
         return "Module '" + id + "' has been rejected:\n" +
             "   Cannot select module with conflict on capability '" + formatCapability(capabilityConflict.left) + "' also provided by " +
-            capabilityConflict.getRight().stream().map(NodeState::getDisplayName).collect(Collectors.toList());
+            capabilityConflict.getRight().stream().map(NodeState::getDisplayName).sorted().collect(Collectors.toList());
     }
 
     private static String formatCapability(Capability capability) {
@@ -395,12 +396,6 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
     @Override
     public VirtualPlatformState getPlatformState() {
         return module.getPlatformState();
-    }
-
-    public void removeOutgoingEdges() {
-        for (NodeState configuration : getNodes()) {
-            configuration.deselect();
-        }
     }
 
     /**
@@ -437,19 +432,11 @@ public class ComponentState implements ComponentResolutionState, DependencyGraph
         }
     }
 
-    CapabilityInternal getImplicitCapability() {
+    public ImmutableCapability getImplicitCapability() {
         return resolveState.getDefaultCapability();
     }
 
-    @Nullable
-    Capability findCapability(String group, String name) {
-        if (id.getGroup().equals(group) && id.getName().equals(name)) {
-            return getImplicitCapability();
-        }
-        return null;
-    }
-
-    boolean hasMoreThanOneSelectedNodeUsingVariantAwareResolution() {
+    public boolean hasMoreThanOneSelectedNodeUsingVariantAwareResolution() {
         int count = 0;
         for (NodeState node : nodes) {
             if (node.isSelectedByVariantAwareResolution()) {

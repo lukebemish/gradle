@@ -30,6 +30,7 @@ import org.jspecify.annotations.NullMarked;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -66,10 +67,22 @@ public class GradleDslBaseScriptModelBuilder implements BuildScopeModelBuilder {
     }
 
     private static ClassPath getKotlinScriptTemplatesClassPath(ModuleRegistry moduleRegistry) {
-        return Stream.of("gradle-core", "gradle-tooling-api")
-            .map(moduleRegistry::getModule)
-            .flatMap(it -> it.getAllRequiredModules().stream())
-            .reduce(ClassPath.EMPTY, (classPath, module) -> classPath.plus(module.getClasspath()), ClassPath::plus);
+        // TODO: We should allow the ModuleRegistry to generate this list instead of
+        // controlling it manually. We should have a separate project for our script templates,
+        // where its runtime classpath contains only dependencies we want, so when loading the
+        // template module from the registry we get this list auto-generated for us.
+        Stream<String> moduleNames = Stream.of(
+            "gradle-base-services",
+            "gradle-base-services-groovy",
+            "gradle-core-api",
+            "gradle-kotlin-dsl",
+            "gradle-kotlin-dsl-shared-runtime",
+            "gradle-kotlin-dsl-tooling-models",
+            "kotlin-script-runtime"
+        );
+
+        return moduleNames.map(name -> moduleRegistry.getModule(name).getImplementationClasspath())
+            .reduce(ClassPath.EMPTY, ClassPath::plus, ClassPath::plus);
     }
 }
 
@@ -122,6 +135,12 @@ class DefaultGroovyDslBaseScriptModel implements GroovyDslBaseScriptModel, Seria
 @NullMarked
 class DefaultKotlinDslBaseScriptModel implements KotlinDslBaseScriptModel, Serializable {
 
+    private static final List<String> TEMPLATE_CLASS_NAMES = Arrays.asList(
+        "org.gradle.kotlin.dsl.KotlinGradleScriptTemplate",
+        "org.gradle.kotlin.dsl.KotlinSettingsScriptTemplate",
+        "org.gradle.kotlin.dsl.KotlinProjectScriptTemplate"
+    );
+
     private final List<File> scriptTemplatesClassPath;
     private final List<File> compileClassPath;
     private final List<String> implicitImports;
@@ -145,5 +164,10 @@ class DefaultKotlinDslBaseScriptModel implements KotlinDslBaseScriptModel, Seria
     @Override
     public List<String> getImplicitImports() {
         return implicitImports;
+    }
+
+    @Override
+    public List<String> getTemplateClassNames() {
+        return TEMPLATE_CLASS_NAMES;
     }
 }

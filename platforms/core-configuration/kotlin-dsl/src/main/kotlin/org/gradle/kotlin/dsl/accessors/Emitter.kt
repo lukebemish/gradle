@@ -174,7 +174,7 @@ fun importsRequiredBy(accessor: Accessor): List<String> = accessor.run {
         is Accessor.ForTask -> importsRequiredBy(spec.type)
         is Accessor.ForContainerElement -> importsRequiredBy(spec.receiver, spec.type)
         is Accessor.ForModelDefault -> importsRequiredBy(spec.receiver, spec.type)
-        is Accessor.ForSoftwareType -> importsRequiredBy(spec.modelType) + listOf(Incubating::class.java.name, Project::class.java.name)
+        is Accessor.ForProjectType -> importsRequiredBy(spec.modelType) + importsRequiredBy(spec.targetType) + listOf(Incubating::class.java.name, Project::class.java.name)
         is Accessor.ForContainerElementFactory -> importsRequiredBy(spec.receiverType, spec.elementType) + listOf(Incubating::class.java.name)
         else -> emptyList()
     }
@@ -199,9 +199,11 @@ sealed class Accessor {
 
     data class ForModelDefault(val spec: TypedAccessorSpec) : Accessor()
 
-    data class ForSoftwareType(val spec: TypedSoftwareTypeEntry) : Accessor()
+    data class ForProjectType(val spec: TypedProjectFeatureEntry) : Accessor()
 
     data class ForContainerElementFactory(val spec: TypedContainerElementFactoryEntry) : Accessor()
+
+    data class ForDeclarativeNestedModel(val spec: TypedAccessorSpec) : Accessor()
 }
 
 
@@ -224,8 +226,9 @@ fun accessorsFor(schema: ProjectSchema<TypeAccessibility>): Sequence<Accessor> =
             yieldAll(configurationNames.map(Accessor::ForConfiguration))
 
             yieldAll(uniqueAccessorsFor(modelDefaults).map(Accessor::ForModelDefault))
-            yieldAll(uniqueSoftwareTypeEntries(softwareTypeEntries.mapNotNull(::typedSoftwareType)).map(Accessor::ForSoftwareType))
+            yieldAll(uniqueProjectFeatureEntries(projectFeatureEntries.mapNotNull(::typedProjectType)).map(Accessor::ForProjectType))
             yieldAll(uniqueContainerElementFactories(containerElementFactories.mapNotNull(::typedContainerElementFactory)).map(Accessor::ForContainerElementFactory))
+            yieldAll(nestedModelEntries.mapNotNull(::typedNestedModel).map(Accessor::ForDeclarativeNestedModel))
         }
     }
 }
@@ -239,10 +242,10 @@ fun configurationAccessorSpec(nameSpec: AccessorNameSpec) =
         accessibleType<Configuration>()
     )
 
-private fun typedSoftwareType(softwareTypeEntry: SoftwareTypeEntry<TypeAccessibility>) : TypedSoftwareTypeEntry? {
-    val name = AccessorNameSpec.createOrNull(softwareTypeEntry.softwareTypeName)
+private fun typedProjectType(projectFeatureEntry: ProjectFeatureEntry<TypeAccessibility>) : TypedProjectFeatureEntry? {
+    val name = AccessorNameSpec.createOrNull(projectFeatureEntry.featureName)
     return name?.let {
-        TypedSoftwareTypeEntry(name, softwareTypeEntry.modelType)
+        TypedProjectFeatureEntry(name, projectFeatureEntry.ownDefinitionType, projectFeatureEntry.targetDefinitionType)
     }
 }
 
@@ -250,6 +253,17 @@ private fun typedContainerElementFactory(containerElementFactoryEntry: Container
     val name = AccessorNameSpec.createOrNull(containerElementFactoryEntry.factoryName)
     return name?.let {
         TypedContainerElementFactoryEntry(name, containerElementFactoryEntry.containerReceiverType, containerElementFactoryEntry.publicType)
+    }
+}
+
+private fun typedNestedModel(nestedModelEntry: NestedModelEntry<TypeAccessibility>) : TypedAccessorSpec? {
+    val name = AccessorNameSpec.createOrNull(nestedModelEntry.nestedModelPropertyName)
+    return name?.let {
+        TypedAccessorSpec(
+            nestedModelEntry.ownerType as? TypeAccessibility.Accessible ?: return null,
+            name,
+            nestedModelEntry.nestedModelType
+        )
     }
 }
 

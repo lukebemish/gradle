@@ -26,7 +26,6 @@ import spock.lang.Issue
 
 @FluidDependenciesResolveTest
 class ResolutionResultApiIntegrationTest extends AbstractDependencyResolutionTest {
-    ResolveTestFixture resolve = new ResolveTestFixture(buildFile, 'conf')
 
     /*
     The ResolutionResult API is also covered by the dependency report integration tests.
@@ -123,7 +122,7 @@ baz:1.0 requested
                         if (it.id instanceof ModuleComponentIdentifier && it.id.module == 'leaf') {
                             def selectionReason = it.selectionReason
                             assert selectionReason.conflictResolution
-                            def descriptions = selectionReason.descriptions.reverse()
+                            def descriptions = selectionReason.descriptions
                             assert descriptions.size() > 1
                             descriptions.each {
                                 println "\$it.cause : \$it.description"
@@ -144,6 +143,8 @@ baz:1.0 requested
     @ToBeFixedForConfigurationCache(because = "task exercises the resolution result API")
     def "resolution result API gives access to dependency reasons in case of conflict and selection by rule"() {
         given:
+        ResolveTestFixture resolve = new ResolveTestFixture(testDirectory)
+
         mavenRepo.with {
             module('org.test', 'leaf', '1.0').publish()
             def leaf2 = module('org.test', 'leaf', '1.1').publish()
@@ -158,7 +159,7 @@ baz:1.0 requested
 
         }
         settingsFile << """rootProject.name='test'"""
-        file("build.gradle") << """
+        buildFile << """
             configurations {
                 conf {
                     resolutionStrategy {
@@ -175,6 +176,8 @@ baz:1.0 requested
                 }
             }
 
+            ${resolve.configureProject("conf")}
+
             repositories {
                maven { url = "${mavenRepo.uri}" }
             }
@@ -183,17 +186,15 @@ baz:1.0 requested
                 conf 'org.test:a:1.0'
                 conf 'org.test:b:1.0'
             }
-        """
-        resolve.prepare()
-        buildFile << """
-            checkDeps {
+
+            tasks.register("checkResolutionResult") {
                 doLast {
                     def result = configurations.conf.incoming.resolutionResult
                     result.allComponents {
                         if (it.id instanceof ModuleComponentIdentifier && it.id.module == 'leaf') {
                             def selectionReason = it.selectionReason
                             assert selectionReason.conflictResolution
-                            def descriptions = selectionReason.descriptions.reverse()
+                            def descriptions = selectionReason.descriptions
                             assert descriptions.size() > 1
                             descriptions.each {
                                 println "\$it.cause : \$it.description"
@@ -208,7 +209,7 @@ baz:1.0 requested
 
         when:
 
-        run "checkDeps"
+        run(":checkDeps", ":checkResolutionResult")
 
         then:
         resolve.expectGraph {
@@ -1106,6 +1107,33 @@ testRuntimeClasspath
 
                     def usageAsString = root.get().attributes.getAttribute(Attribute.of(Usage.USAGE_ATTRIBUTE.name, String.class))
                     assert usageAsString == "java-runtime"
+                }
+            }
+        """
+
+        expect:
+        succeeds("resolve")
+    }
+
+    def "capabilities on variant always return same instance"() {
+        mavenRepo.module("org", "foo", "1.0").publish()
+
+        buildFile << """
+            plugins {
+                id("java-library")
+            }
+
+            ${mavenTestRepository()}
+
+            dependencies {
+                implementation("org:foo:1.0")
+            }
+
+            tasks.register("resolve") {
+                def rootComponent = configurations.runtimeClasspath.incoming.resolutionResult.rootComponent
+                doLast {
+                    def variant = rootComponent.get().dependencies.first().resolvedVariant
+                    assert variant.capabilities.is(variant.capabilities)
                 }
             }
         """

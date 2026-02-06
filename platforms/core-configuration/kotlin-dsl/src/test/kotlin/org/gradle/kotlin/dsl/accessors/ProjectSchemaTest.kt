@@ -238,8 +238,9 @@ fun projectSchemaWith(
     containerElements = containerElements,
     configurations = configurations.map { ConfigurationEntry(it) },
     modelDefaults = buildConventions,
-    softwareTypeEntries = listOf(),
-    containerElementFactories = listOf()
+    projectFeatureEntries = listOf(),
+    containerElementFactories = listOf(),
+    nestedModelEntries = listOf()
 )
 
 

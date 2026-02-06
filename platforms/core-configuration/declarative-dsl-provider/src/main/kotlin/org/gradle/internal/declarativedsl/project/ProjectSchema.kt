@@ -17,30 +17,30 @@
 package org.gradle.internal.declarativedsl.project
 
 import org.gradle.internal.declarativedsl.analysis.analyzeEverything
-import org.gradle.internal.declarativedsl.common.dependencyCollectors
+import org.gradle.internal.declarativedsl.dependencycollectors.dependencyCollectors
 import org.gradle.internal.declarativedsl.common.gradleDslGeneralSchema
 import org.gradle.internal.declarativedsl.evaluationSchema.DefaultInterpretationSequence
 import org.gradle.internal.declarativedsl.evaluationSchema.buildEvaluationAndConversionSchema
 import org.gradle.internal.declarativedsl.evaluationSchema.ifConversionSupported
 import org.gradle.internal.declarativedsl.evaluator.conversion.EvaluationAndConversionSchema
-import org.gradle.internal.declarativedsl.software.softwareTypesComponent
-import org.gradle.plugin.software.internal.SoftwareTypeRegistry
+import org.gradle.internal.declarativedsl.software.projectFeaturesComponent
+import org.gradle.plugin.software.internal.ProjectFeatureDeclarations
 
 
 internal
 fun projectInterpretationSequence(
-    softwareTypeRegistry: SoftwareTypeRegistry
-) = DefaultInterpretationSequence(listOf(projectInterpretationSequenceStep(softwareTypeRegistry)))
+    projectFeatureDeclarations: ProjectFeatureDeclarations
+) = DefaultInterpretationSequence(listOf(projectInterpretationSequenceStep(projectFeatureDeclarations)))
 
 
 fun projectEvaluationSchema(
-    softwareTypeRegistry: SoftwareTypeRegistry,
+    projectFeatureDeclarations: ProjectFeatureDeclarations,
 ): EvaluationAndConversionSchema {
     return buildEvaluationAndConversionSchema(ProjectTopLevelReceiver::class, analyzeEverything) {
         gradleDslGeneralSchema()
         dependencyCollectors()
         ifConversionSupported {
-            softwareTypesComponent(ProjectTopLevelReceiver::class, softwareTypeRegistry, withDefaultsApplication = true)
+            projectFeaturesComponent(ProjectTopLevelReceiver::class, projectFeatureDeclarations, withDefaultsApplication = true)
         }
     }
 }

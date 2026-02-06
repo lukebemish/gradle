@@ -25,6 +25,7 @@ import org.gradle.api.internal.initialization.ClassLoaderScope
 import org.gradle.api.internal.project.IProjectFactory
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.internal.project.ProjectState
+import org.gradle.api.problems.ProblemReporter
 import org.gradle.internal.build.BuildProjectRegistry
 import org.gradle.internal.build.BuildState
 import org.gradle.internal.service.DefaultServiceRegistry
@@ -130,11 +131,11 @@ class InstantiatingBuildLoaderTest extends Specification {
         1 * gradle.setDefaultProject(childProject)
 
         and:
-        rootProject.childProjectsUnchecked['child'].is childProject
+        rootProject.childProjects['child'] == childProject
     }
 
     ProjectDescriptorInternal descriptor(String name, ProjectDescriptorInternal parent, File projectDir) {
-        new DefaultProjectDescriptor(parent, name, projectDir, projectDescriptorRegistry, TestFiles.resolver(rootProjectDir))
+        new DefaultProjectDescriptor(parent, name, projectDir, projectDescriptorRegistry, TestFiles.resolver(rootProjectDir), Stub(ProblemReporter))
     }
 
     ProjectInternal project(ProjectDescriptor descriptor, ProjectInternal parent) {

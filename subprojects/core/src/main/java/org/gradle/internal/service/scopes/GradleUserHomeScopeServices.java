@@ -30,11 +30,17 @@ import org.gradle.api.internal.file.temp.GradleUserHomeTemporaryFileProvider;
 import org.gradle.api.internal.file.temp.TemporaryFileProvider;
 import org.gradle.api.internal.initialization.loadercache.ClassLoaderCache;
 import org.gradle.api.internal.initialization.loadercache.DefaultClassLoaderCache;
+import org.gradle.api.internal.plugins.CorePluginRegistryProvider;
+import org.gradle.api.internal.plugins.DefaultPluginRegistry;
+import org.gradle.api.internal.plugins.PluginInspector;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.cache.CacheCleanupStrategyFactory;
+import org.gradle.cache.FineGrainedCacheCleanupStrategyFactory;
 import org.gradle.cache.GlobalCache;
 import org.gradle.cache.GlobalCacheLocations;
 import org.gradle.cache.internal.CrossBuildInMemoryCacheFactory;
 import org.gradle.cache.internal.DefaultFileContentCacheFactory;
+import org.gradle.cache.internal.DefaultFineGrainedCacheCleanupStrategyFactory;
 import org.gradle.cache.internal.DefaultGeneratedGradleJarCache;
 import org.gradle.cache.internal.DefaultGlobalCacheLocations;
 import org.gradle.cache.internal.FileContentCacheFactory;
@@ -198,6 +204,12 @@ public class GradleUserHomeScopeServices extends WorkerSharedUserHomeScopeServic
     }
 
     @Provides
+    CorePluginRegistryProvider createCorePluginRegistryProvider(ClassLoaderScopeRegistry scopeRegistry, PluginInspector pluginInspector) {
+        DefaultPluginRegistry corePluginRegistry = new DefaultPluginRegistry(pluginInspector, scopeRegistry.getCoreAndPluginsScope());
+        return () -> corePluginRegistry;
+    }
+
+    @Provides
     GlobalCacheLocations createGlobalCacheLocations(List<GlobalCache> globalCaches) {
         return new DefaultGlobalCacheLocations(globalCaches);
     }
@@ -271,6 +283,11 @@ public class GradleUserHomeScopeServices extends WorkerSharedUserHomeScopeServic
     @Provides
     FileAccessTimeJournal createFileAccessTimeJournal(GlobalScopedCacheBuilderFactory cacheBuilderFactory, InMemoryCacheDecoratorFactory cacheDecoratorFactory) {
         return new DefaultFileAccessTimeJournal(cacheBuilderFactory, cacheDecoratorFactory);
+    }
+
+    @Provides
+    FineGrainedCacheCleanupStrategyFactory createFineGrainedCacheCleanupStrategyFactory(CacheCleanupStrategyFactory cacheCleanupStrategyFactory, FileAccessTimeJournal fileAccessTimeJournal) {
+        return new DefaultFineGrainedCacheCleanupStrategyFactory(cacheCleanupStrategyFactory, fileAccessTimeJournal);
     }
 
     @Provides

@@ -19,6 +19,7 @@ tasks.isolatedProjectsIntegTest {
 dependencies {
     api(projects.baseServices)
     api(projects.buildOperations)
+    api(projects.buildOption)
     api(projects.concurrent)
     api(projects.configurationCacheBase)
     api(projects.configurationProblemsBase)
@@ -29,7 +30,6 @@ dependencies {
     api(projects.fileTemp)
     api(projects.graphSerialization)
     api(projects.loggingApi)
-    api(projects.messaging)
     api(projects.native)
     api(projects.pluginUse)
     api(projects.resources)
@@ -43,10 +43,12 @@ dependencies {
     api(libs.kotlinStdlib)
 
     // TODO - it might be good to allow projects to contribute state to save and restore, rather than have this project know about everything
+    implementation(projects.buildDiscovery)
+    implementation(projects.buildDiscoveryImpl)
     implementation(projects.buildEvents)
-    implementation(projects.buildOption)
     implementation(projects.buildProcessServices)
     implementation(projects.classloaders)
+    implementation(projects.coreFlowServicesApi)
     implementation(projects.coreKotlinExtensions)
     implementation(projects.dependencyManagementSerializationCodecs)
     implementation(projects.encryptionServices)
@@ -62,6 +64,7 @@ dependencies {
     implementation(projects.inputTracking)
     implementation(projects.instrumentationAgentServices)
     implementation(projects.logging)
+    implementation(projects.messaging)
     implementation(projects.modelCore)
     implementation(projects.persistentCache)
     implementation(projects.problemsApi)
@@ -72,10 +75,11 @@ dependencies {
     implementation(projects.toolingApi)
 
     implementation(libs.guava)
-    implementation(libs.jspecify)
     implementation(libs.fastutil)
     implementation(libs.kryo)
     implementation(libs.slf4jApi)
+
+    compileOnly(libs.jspecify)
 
     runtimeOnly(projects.beanSerializationServices)
     runtimeOnly(projects.compositeBuilds)
@@ -89,8 +93,8 @@ dependencies {
     testImplementation(testFixtures(projects.beanSerializationServices))
     testImplementation(projects.io)
     testImplementation(testFixtures(projects.core))
-    testImplementation(libs.mockitoKotlin)
-    testImplementation(libs.kotlinCoroutinesDebug)
+    testImplementation(testLibs.mockitoKotlin)
+    testImplementation(testLibs.kotlinxCoroutinesDebug)
 
     integTestImplementation(projects.cli)
     integTestImplementation(projects.ide)
@@ -104,7 +108,7 @@ dependencies {
     integTestImplementation(libs.ant)
     integTestImplementation(libs.guava)
     integTestImplementation(libs.inject)
-    integTestImplementation("com.microsoft.playwright:playwright:1.20.1")
+    integTestImplementation(testLibs.playwright)
 
     integTestImplementation(testFixtures(projects.toolingApi))
     integTestImplementation(testFixtures(projects.dependencyManagement))

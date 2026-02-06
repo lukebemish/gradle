@@ -25,6 +25,7 @@ import org.gradle.api.internal.artifacts.DependencyManagementManagedTypesFactory
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependencyFactoryInternal
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.jvm.JvmComponentDependencies
+import org.gradle.test.fixtures.ExpectDeprecation
 import org.gradle.util.TestUtil
 import org.gradle.util.internal.ConfigureUtil
 import spock.lang.Specification
@@ -68,9 +69,12 @@ class JvmComponentDependenciesTest extends Specification {
         dependencies.getImplementation().getDependencies().get() == [example, example2] as Set
     }
 
+    @ExpectDeprecation("Declaring dependencies using multi-string notation has been deprecated")
     def "GAV notation is supported"() {
+        given:
         def example = Mock(ExternalModuleDependency)
         def example2 = Mock(ExternalModuleDependency)
+
         when:
         dependencies {
             implementation module(group: "com.example", name: "example", version: "1.0")
@@ -94,7 +98,7 @@ class JvmComponentDependenciesTest extends Specification {
             implementation project()
         }
         then:
-        1 * dependencyFactory.create(currentProject) >> currentProjectDependency
+        1 * dependencyFactory.createProjectDependency() >> currentProjectDependency
 
         dependencies.getImplementation().getDependencies().get() == [currentProjectDependency] as Set
     }
@@ -111,8 +115,7 @@ class JvmComponentDependenciesTest extends Specification {
         }
 
         then:
-        1 * currentProject.project(":path:to:somewhere") >> otherProject
-        1 * dependencyFactory.create(otherProject) >> otherProjectDependency
+        1 * dependencyFactory.createProjectDependency(":path:to:somewhere") >> otherProjectDependency
 
         dependencies.getImplementation().getDependencies().get() == [otherProjectDependency] as Set
     }

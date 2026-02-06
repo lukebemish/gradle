@@ -33,7 +33,6 @@ dependencies {
     api(projects.concurrent)
     api(projects.core)
     api(projects.coreApi)
-    api(projects.dependencyManagement)
     api(projects.hashing)
     api(projects.internalTesting) {
         because("Part of the public API")
@@ -55,37 +54,39 @@ dependencies {
     api(libs.groovy)
     api(libs.groovyXml)
     api(libs.guava)
-    api(libs.hamcrest)
-    api(libs.jettyWebApp) {
+    api(testLibs.hamcrest)
+    api(testLibs.jettyWebApp) {
         because("Part of the public API via HttpServer")
     }
     api(libs.jansi)
-    api(libs.jettySecurity)
-    api(libs.jettyServer)
-    api(libs.jettyUtil)
+    api(testLibs.jettySecurity)
+    api(testLibs.jettyServer)
+    api(testLibs.jettyUtil)
     api(libs.jgit) {
         because("Some tests require a git reportitory - see AbstractIntegrationSpec.initGitDir(")
     }
     api(libs.jspecify)
     api(libs.jsr305)
-    api(libs.junit) {
+    api(testLibs.junit) {
         because("Part of the public API, used by spock AST transformer")
     }
-    api(libs.mavenResolverApi) {
+    api(providedLibs.mavenResolverApi) {
         because("For ApiMavenResolver. API we interact with to resolve Maven graphs & artifacts")
     }
-    api(libs.samplesCheck) {
+    api(testLibs.samplesCheck) {
         exclude(module = "groovy-all")
     }
-    api(libs.samplesDiscovery)
-    api(libs.servletApi)
+    api(testLibs.samplesDiscovery)
+    api(testLibs.servletApi)
     api(libs.slf4jApi)
-    api(libs.spock) {
+    api(testLibs.spock) {
         because("Part of the public API")
     }
 
     implementation(projects.baseServicesGroovy)
     implementation(projects.buildCache)
+    implementation(projects.buildDiscovery)
+    implementation(projects.buildDiscoveryImpl)
     implementation(projects.buildEvents)
     implementation(projects.buildOption)
     implementation(projects.buildProcessServices)
@@ -93,7 +94,9 @@ dependencies {
     implementation(projects.classloaders)
     implementation(projects.cli)
     implementation(projects.clientServices)
+    implementation(projects.daemonLogging)
     implementation(projects.daemonServices)
+    implementation(projects.dependencyManagement)
     implementation(projects.enterpriseLogging)
     implementation(projects.enterpriseOperations)
     implementation(projects.fileCollections)
@@ -119,7 +122,7 @@ dependencies {
     implementation(testFixtures(projects.core))
     implementation(testFixtures(projects.enterpriseLogging))
 
-    implementation(libs.ansiControlSequenceUtil)
+    implementation(testLibs.ansiControlSequenceUtil)
     implementation(libs.commonsCompress)
     implementation(libs.commonsLang)
     implementation(libs.commonsIo)
@@ -128,19 +131,19 @@ dependencies {
     implementation(libs.inject)
     implementation(libs.ivy)
     implementation(libs.jcifs)
-    implementation(libs.jetty)
-    implementation(libs.jettyServlet)
-    implementation(libs.littleproxy)
-    implementation(libs.mavenResolverSupplier) {
+    implementation(testLibs.jetty)
+    implementation(testLibs.jettyServlet)
+    implementation(testLibs.littleproxy)
+    implementation(testLibs.mavenResolverSupplier) {
         because("For ApiMavenResolver. Wires together implementation for maven-resolver-api")
     }
-    implementation(libs.maven3ResolverProvider) {
+    implementation(testLibs.mavenResolverProvider) {
         because("For ApiMavenResolver. Provides MavenRepositorySystemUtils")
     }
     implementation(libs.nativePlatform)
-    implementation(libs.netty)
-    implementation(libs.opentest4j)
-    implementation(libs.socksProxy)
+    implementation(testLibs.netty)
+    implementation(testLibs.opentest4j)
+    implementation(testLibs.socksProxy)
     // we depend on both: sshd platforms and libraries
     implementation(libs.sshdCore)
     implementation(platform(libs.sshdCore))
@@ -155,16 +158,16 @@ dependencies {
             java.lang.AssertionError: typeSig ERROR""")
     }
 
-    runtimeOnly(libs.mavenResolverImpl) {
+    runtimeOnly(testLibs.mavenResolverImpl) {
         because("For ApiMavenResolver. Implements maven-resolver-api")
     }
-    runtimeOnly(libs.mavenResolverConnectorBasic) {
+    runtimeOnly(testLibs.mavenResolverConnectorBasic) {
         because("For ApiMavenResolver. To use resolver transporters")
     }
-    runtimeOnly(libs.mavenResolverTransportFile) {
+    runtimeOnly(testLibs.mavenResolverTransportFile) {
         because("For ApiMavenResolver. To resolve file:// URLs")
     }
-    runtimeOnly(libs.mavenResolverTransportHttp) {
+    runtimeOnly(testLibs.mavenResolverTransportHttp) {
         because("For ApiMavenResolver. To resolve http:// URLs")
     }
 
@@ -191,6 +194,7 @@ val prepareVersionsInfo = tasks.register<PrepareVersionsInfo>("prepareVersionsIn
 val copyTestedVersionsInfo by tasks.registering(Copy::class) {
     from(isolated.rootProject.projectDirectory.file("gradle/dependency-management/agp-versions.properties"))
     from(isolated.rootProject.projectDirectory.file("gradle/dependency-management/kotlin-versions.properties"))
+    from(isolated.rootProject.projectDirectory.file("gradle/dependency-management/smoke-tested-plugins.properties"))
     into(layout.buildDirectory.dir("generated-resources/tested-versions"))
 }
 

@@ -23,6 +23,7 @@ import org.gradle.api.launcher.cli.WelcomeMessageConfiguration;
 import org.gradle.api.launcher.cli.WelcomeMessageDisplayMode;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.configuration.ConsoleOutput;
+import org.gradle.api.logging.configuration.ConsoleUnicodeSupport;
 import org.gradle.api.logging.configuration.ShowStacktrace;
 import org.gradle.api.logging.configuration.WarningMode;
 import org.gradle.initialization.StartParameterBuildOptions.ConfigurationCacheProblemsOption;
@@ -79,6 +80,7 @@ public class BuildActionSerializer {
         private final Serializer<LogLevel> logLevelSerializer;
         private final Serializer<ShowStacktrace> showStacktraceSerializer;
         private final Serializer<ConsoleOutput> consoleOutputSerializer;
+        private final Serializer<ConsoleUnicodeSupport> consoleUnicodeSupportSerializer;
         private final Serializer<WarningMode> warningModeSerializer;
         private final Serializer<File> nullableFileSerializer = new NullableFileSerializer();
         private final Serializer<List<String>> stringListSerializer = new ListSerializer<>(BaseSerializerFactory.STRING_SERIALIZER);
@@ -91,6 +93,7 @@ public class BuildActionSerializer {
             logLevelSerializer = serializerFactory.getSerializerFor(LogLevel.class);
             showStacktraceSerializer = serializerFactory.getSerializerFor(ShowStacktrace.class);
             consoleOutputSerializer = serializerFactory.getSerializerFor(ConsoleOutput.class);
+            consoleUnicodeSupportSerializer = serializerFactory.getSerializerFor(ConsoleUnicodeSupport.class);
             warningModeSerializer = serializerFactory.getSerializerFor(WarningMode.class);
         }
 
@@ -100,6 +103,7 @@ public class BuildActionSerializer {
             logLevelSerializer.write(encoder, startParameter.getLogLevel());
             showStacktraceSerializer.write(encoder, startParameter.getShowStacktrace());
             consoleOutputSerializer.write(encoder, startParameter.getConsoleOutput());
+            consoleUnicodeSupportSerializer.write(encoder, startParameter.getConsoleUnicodeSupport());
             warningModeSerializer.write(encoder, startParameter.getWarningMode());
 
             // Parallel configuration
@@ -119,7 +123,7 @@ public class BuildActionSerializer {
             fileListSerializer.write(encoder, startParameter.getIncludedBuilds());
 
             // Other stuff
-            NO_NULL_STRING_MAP_SERIALIZER.write(encoder, startParameter.getProjectProperties());
+            NO_NULL_STRING_MAP_SERIALIZER.write(encoder, startParameter.getProjectPropertiesUntracked());
             NO_NULL_STRING_MAP_SERIALIZER.write(encoder, startParameter.getSystemPropertiesArgs());
             fileListSerializer.write(encoder, startParameter.getInitScripts());
             stringListSerializer.write(encoder, startParameter.getLockedDependenciesToUpdate());
@@ -150,6 +154,8 @@ public class BuildActionSerializer {
             encoder.writeBoolean(startParameter.isConfigurationCacheQuiet());
             encoder.writeBoolean(startParameter.isConfigurationCacheIntegrityCheckEnabled());
             encoder.writeSmallInt(startParameter.getConfigurationCacheEntriesPerKey());
+            encoder.writeNullableString(startParameter.getConfigurationCacheHeapDumpDir());
+            encoder.writeBoolean(startParameter.isConfigurationCacheFineGrainedPropertyTracking());
             encoder.writeBoolean(startParameter.isConfigureOnDemand());
             encoder.writeBoolean(startParameter.isContinuous());
             encoder.writeLong(startParameter.getContinuousBuildQuietPeriod().toMillis());
@@ -165,6 +171,7 @@ public class BuildActionSerializer {
             encoder.writeBoolean(startParameter.isProblemReportGenerationEnabled());
             encoder.writeBoolean(startParameter.isTaskGraph());
             encoder.writeBoolean(startParameter.isDaemonJvmCriteriaConfigured());
+            valueSerializer.write(encoder, startParameter.getParallelToolingModelBuilding());
         }
 
         private void writeTaskRequests(Encoder encoder, List<TaskExecutionRequest> taskRequests) throws Exception {
@@ -193,6 +200,7 @@ public class BuildActionSerializer {
             startParameter.setLogLevel(logLevelSerializer.read(decoder));
             startParameter.setShowStacktrace(showStacktraceSerializer.read(decoder));
             startParameter.setConsoleOutput(consoleOutputSerializer.read(decoder));
+            startParameter.setConsoleUnicodeSupport(consoleUnicodeSupportSerializer.read(decoder));
             startParameter.setWarningMode(warningModeSerializer.read(decoder));
 
             // Parallel configuration
@@ -243,6 +251,8 @@ public class BuildActionSerializer {
             startParameter.setConfigurationCacheQuiet(decoder.readBoolean());
             startParameter.setConfigurationCacheIntegrityCheckEnabled(decoder.readBoolean());
             startParameter.setConfigurationCacheEntriesPerKey(decoder.readSmallInt());
+            startParameter.setConfigurationCacheHeapDumpDir(decoder.readNullableString());
+            startParameter.setConfigurationCacheFineGrainedPropertyTracking(decoder.readBoolean());
             startParameter.setConfigureOnDemand(decoder.readBoolean());
             startParameter.setContinuous(decoder.readBoolean());
             startParameter.setContinuousBuildQuietPeriod(Duration.ofMillis(decoder.readLong()));
@@ -261,6 +271,7 @@ public class BuildActionSerializer {
             startParameter.enableProblemReportGeneration(decoder.readBoolean());
             startParameter.setTaskGraph(decoder.readBoolean());
             startParameter.setDaemonJvmCriteriaConfigured(decoder.readBoolean());
+            startParameter.setParallelToolingModelBuilding(valueSerializer.read(decoder));
 
             return startParameter;
         }

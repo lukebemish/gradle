@@ -43,8 +43,18 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
     private final ComponentIdentifier platformId; // just for reporting
     private final boolean force;
     private final boolean transitive;
+    private final boolean constraint;
 
-    LenientPlatformDependencyMetadata(ResolveState resolveState, NodeState from, ModuleComponentSelector cs, ModuleComponentIdentifier componentId, @Nullable ComponentIdentifier platformId, boolean force, boolean transitive) {
+    LenientPlatformDependencyMetadata(
+        ResolveState resolveState,
+        NodeState from,
+        ModuleComponentSelector cs,
+        ModuleComponentIdentifier componentId,
+        @Nullable ComponentIdentifier platformId,
+        boolean force,
+        boolean transitive,
+        boolean constraint
+    ) {
         this.resolveState = resolveState;
         this.from = from;
         this.cs = cs;
@@ -52,6 +62,7 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
         this.platformId = platformId;
         this.force = force;
         this.transitive = transitive;
+        this.constraint = constraint;
     }
 
     @Override
@@ -61,7 +72,7 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
 
     @Override
     public ModuleDependencyMetadata withRequestedVersion(VersionConstraint requestedVersion) {
-        return this;
+        throw new UnsupportedOperationException("Applying component metadata rules to lenient platform dependencies is not supported.");
     }
 
     @Override
@@ -71,12 +82,12 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
 
     @Override
     public ModuleDependencyMetadata withReason(String reason) {
-        return this;
+        throw new UnsupportedOperationException("Applying component metadata rules to lenient platform dependencies is not supported.");
     }
 
     @Override
     public ModuleDependencyMetadata withEndorseStrictVersions(boolean endorse) {
-        return this;
+        throw new UnsupportedOperationException("Applying component metadata rules to lenient platform dependencies is not supported.");
     }
 
     @Override
@@ -112,11 +123,15 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
 
     @Override
     public DependencyMetadata withTarget(ComponentSelector target) {
+        // TODO: This gets called when performing substitutions.
+        //       We probably shouldn't ignore this.
         return this;
     }
 
     @Override
     public DependencyMetadata withTargetAndArtifacts(ComponentSelector target, List<IvyArtifactName> artifacts) {
+        // TODO: This gets called when performing substitutions.
+        //       We probably shouldn't ignore this.
         return this;
     }
 
@@ -132,7 +147,7 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
 
     @Override
     public boolean isConstraint() {
-        return true;
+        return constraint;
     }
 
     @Override
@@ -147,7 +162,7 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
 
     @Override
     public String toString() {
-        return "virtual metadata for " + componentId;
+        return componentId.getDisplayName();
     }
 
     @Override
@@ -157,6 +172,6 @@ class LenientPlatformDependencyMetadata implements ModuleDependencyMetadata, For
 
     @Override
     public ForcingDependencyMetadata forced() {
-        return new LenientPlatformDependencyMetadata(resolveState, from, cs, componentId, platformId, true, transitive);
+        return new LenientPlatformDependencyMetadata(resolveState, from, cs, componentId, platformId, true, transitive, constraint);
     }
 }

@@ -16,7 +16,6 @@
 
 package org.gradle.composite.internal;
 
-import org.gradle.StartParameter;
 import org.gradle.api.internal.BuildDefinition;
 import org.gradle.api.internal.StartParameterInternal;
 import org.gradle.initialization.BuildCancellationToken;
@@ -27,6 +26,7 @@ import org.gradle.internal.build.RootBuildState;
 import org.gradle.internal.build.StandAloneNestedBuild;
 import org.gradle.internal.buildtree.BuildTreeState;
 import org.gradle.internal.buildtree.NestedBuildTree;
+import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.event.ListenerManager;
 import org.gradle.internal.scopeids.id.BuildInvocationScopeId;
 import org.gradle.internal.service.scopes.GradleUserHomeScopeServiceRegistry;
@@ -77,9 +77,10 @@ public class BuildStateFactory {
         BuildInvocationScopeId buildInvocationScopeId,
         BuildDefinition buildDefinition,
         Path identityPath,
-        BuildState owner
+        BuildState owner,
+        ClassPath injectedPluginClassPath
     ) {
-        return new DefaultNestedBuildTree(buildInvocationScopeId, buildDefinition, identityPath, owner, userHomeDirServiceRegistry, crossBuildSessionState, buildCancellationToken);
+        return new DefaultNestedBuildTree(buildInvocationScopeId, buildDefinition, identityPath, owner, userHomeDirServiceRegistry, crossBuildSessionState, buildCancellationToken, injectedPluginClassPath);
     }
 
     public BuildDefinition buildDefinitionFor(File buildSrcDir, BuildState owner) {
@@ -97,10 +98,10 @@ public class BuildStateFactory {
         return buildDefinition;
     }
 
-    private static StartParameterInternal buildSrcStartParameterFor(File buildSrcDir, StartParameter containingBuildParameters) {
-        final StartParameterInternal buildSrcStartParameter = (StartParameterInternal) containingBuildParameters.newBuild();
+    private static StartParameterInternal buildSrcStartParameterFor(File buildSrcDir, StartParameterInternal containingBuildParameters) {
+        final StartParameterInternal buildSrcStartParameter = containingBuildParameters.newBuild();
         buildSrcStartParameter.setCurrentDir(buildSrcDir);
-        buildSrcStartParameter.setProjectProperties(containingBuildParameters.getProjectProperties());
+        buildSrcStartParameter.setProjectProperties(containingBuildParameters.getProjectPropertiesUntracked());
         buildSrcStartParameter.doNotSearchUpwards();
         buildSrcStartParameter.setInitScripts(containingBuildParameters.getInitScripts());
         return buildSrcStartParameter;
